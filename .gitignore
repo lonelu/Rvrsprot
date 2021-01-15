@@ -1,0 +1,21 @@
+test/
+.idea
+.DS_Store
+tutorials/.ipynb_checkpoints
+tutorials/output
+functionalities.rst
+designs/
+
+# Docs
+/docs/_build/
+*.pdf
+*png
+*.zip
+*.gz
+*.tgz
+
+# Others
+huong/
+ace2_input/
+smallprot/__pycache__/
+*.pyc

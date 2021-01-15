@@ -1,0 +1,17 @@
+> cd smallprot
+> ipython
+### For testing protein-generating
+
+import os
+import sys
+import gzip
+import string
+import shutil
+import numpy as np
+import prody as pr
+from scipy.stats import mode
+from scipy.spatial.distance import cdist
+from itertools import product, permutations
+import qbits
+from smallprot import pdbutils, query, cluster_loops, smallprot
+

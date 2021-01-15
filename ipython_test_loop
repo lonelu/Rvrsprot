@@ -1,0 +1,96 @@
+> cd smallprot
+> ipython
+### For testing loop-generating
+
+import os
+import sys
+import gzip
+import string
+import shutil
+import numpy as np
+import prody as pr
+from scipy.stats import mode
+from scipy.spatial.distance import cdist
+from itertools import product, permutations
+import qbits
+from smallprot import pdbutils, query, cluster_loops, smallprot
+
+hh = smallprot.SmallProt(seed_pdb="huong/seed.pdb", workdir="/mnt/e/GitHub_Design/smallprot/huong/output1/")
+sat = pdbutils.satisfied_termini(hh.pdbs[0], hh.max_nc_dist)
+workdir = hh.workdir
+loop_range=[3, 20]
+n_chains = len(sat)
+slice_lengths = hh._loop_search_fast(sat, workdir, loop_range)
+loop_success = hh._get_loop_success(sat, workdir, loop_range)
+outfiles = []
+counter = 0
+
+for p in permutations(range(n_chains)): 
+    if np.all([loop_success[p[j], p[j+1]] for j in range(n_chains - 1)]): 
+        print(p) 
+p = (3, 2, 1, 0, 5, 4)
+#_get_top_clusters for one available permutation.
+all_centroids, num_clusters, cluster_key_res, no_clusters = hh._get_top_clusters(workdir, n_chains, slice_lengths, p, loop_range)
+
+#test_topology
+permutation = p
+some_outfiles = []
+pdb_dir = os.path.dirname(hh.pdbs[-1]) 
+pdbutils.split_pdb(hh.pdbs[-1], pdb_dir, hh.min_nbrs, None, 
+                           hh.n_truncations, hh.c_truncations)
+chain_pdbs = [pdb_dir + '/' + path for path 
+                      in os.listdir(pdb_dir) if 'chain_' in path]
+chain_pdbs.sort()
+forbidden = [[]] * len(all_centroids)
+
+loop_idx_sets = np.array(list(product(*[range(num) for num in num_clusters])))
+loop_idx_sets = loop_idx_sets[np.argsort(loop_idx_sets.sum(axis=1))]
+
+idxs = loop_idx_sets[0]
+centroids_gz = [all_centroids[j][idxs[j]] for j in range(len(all_centroids))]
+filenames, centroids, res_ids_to_keep = hh._check_clash(workdir, centroids_gz, forbidden, chain_pdbs, permutation, cluster_key_res, idxs)
+
+if len(centroids) != n_chains - 1 or pdbutils.check_clashes(centroids, res_ids_to_keep):
+    [os.remove(filename) for filename in filenames]
+
+success = []
+for idxs in loop_idx_sets:
+    skip_idxs = False
+    for j in range(len(all_centroids)):
+        if idxs[j] in forbidden[j]:
+            skip_idxs = True
+    if skip_idxs:
+        continue
+    centroids_gz = [all_centroids[j][idxs[j]] for j in range(len(all_centroids))]
+    filenames, centroids, res_ids_to_keep = hh._check_clash(workdir, centroids_gz, forbidden, chain_pdbs, permutation, cluster_key_res, idxs)
+    if len(centroids) != n_chains - 1 or pdbutils.check_clashes(centroids, res_ids_to_keep):
+        [os.remove(filename) for filename in filenames]
+    else:
+        success.append(idxs)
+
+success
+
+idxs = success[0]
+centroids_gz = [all_centroids[j][idxs[j]] for j in range(len(all_centroids))]
+filenames, centroids, res_ids_to_keep = hh._check_clash(workdir, centroids_gz, forbidden, chain_pdbs, permutation, cluster_key_res, idxs)
+
+pdbs_to_combine = [''] * (2 * n_chains - 1)
+pdbs_to_combine[::2] = [hh.full_sse_list[idx] for idx in permutation] 
+pdbs_to_combine[1::2] = centroids
+filenames.append(outfile_path)
+overlaps = []
+for j in range(n_chains - 1):
+    overlaps.append(slice_lengths[permutation[j], permutation[j+1], 0])
+    overlaps.append(slice_lengths[permutation[j], permutation[j+1], 1])
+clashing = pdbutils.stitch(pdbs_to_combine, outfile_path, 
+                                       overlaps=overlaps, 
+                                       min_nbrs=hh.min_nbrs, 
+                                       from_closest=False)
+if clashing:
+    [os.remove(filename) for filename in filenames]
+
+if hh.screen_compactness:
+    compactness = pdbutils.calc_compactness(outfile_path)
+    if compactness < 0.138:
+        [os.remove(filename) for filename in filenames]
+
