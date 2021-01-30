@@ -4,6 +4,8 @@ import prody as pr
 import numpy as np
 from scipy.sparse import csr_matrix
 
+#The method is kabasch_algorithm
+#https://en.wikipedia.org/wiki/Kabsch_algorithm
 def get_rot_trans(mob_coords, targ_coords):
     mob_coords_com = mob_coords.mean(0)
     targ_coords_com = targ_coords.mean(0)
@@ -17,7 +19,8 @@ def get_rot_trans(mob_coords, targ_coords):
         R = np.dot(U, Wt)
     return R, mob_coords_com, targ_coords_com
 
-
+#The method first apply kabasch_algorithm, then calculate rmsd
+#https://en.wikipedia.org/wiki/Root-mean-square_deviation_of_atomic_positions
 def _make_pairwise_rmsd_mat(X):
     M = X.shape[0]
     N = X.shape[1]

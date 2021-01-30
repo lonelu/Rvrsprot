@@ -1,19 +1,26 @@
-#create the environment
+# create the environment
 > cd /mnt/e/GitHub_Design/smallprot
 > conda env create -f environment_linux.yml
 > conda activate env_smallprot
 > ipython
 >> import smallprot
 
-#However, the Qbits is not able to be imported. Add the PYTHONPATH
+# However, the Qbits is not able to be imported. Add the PYTHONPATH
 > cd ~
 > nano .bashrc
-#Add to the bottom of the .bashrc file 
+# Add to the bottom of the .bashrc file 
  export PYTHONPATH="/mnt/e/GitHub_Design/Qbits/"
-#restart the terminal.
+# Add path of master and qbits. (If not working, put the 'export...' lines in .bashrc)
+> echo $PATH
+> export PATH=$PATH:/mnt/e/GitHub_Design/master-v1.6/bin
+> export PATH=$PATH:/mnt/e/GitHub_Design/Qbits
+
+
+# restart the terminal.
 > echo $PYTHONPATH
 
-#Test the ace2 input
+
+# Test the ace2 input
 > cd smallprot
 > ipython
 >> from smallprot import smallprot 
@@ -26,3 +33,6 @@
 >> hh.loop_seed_structure()
 
 
+## Test Para
+from smallprot import smallprot_config
+smallprot_config.writeConfig() 
