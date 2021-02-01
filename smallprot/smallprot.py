@@ -7,6 +7,7 @@ import numpy as np
 import prody as pr
 
 from datetime import datetime 
+from multiprocessing import Pool, Manager
 
 from scipy.stats import mode
 from scipy.spatial.distance import cdist
@@ -52,7 +53,7 @@ class SmallProt:
         else:
             self.para = Parameter()
         if self.para.workdir:
-            _workdir = os.path.realpath(workdir)
+            _workdir = os.path.realpath(self.para.workdir)
             if not os.path.exists(_workdir):
                 os.mkdir(_workdir)
         else:
@@ -64,7 +65,7 @@ class SmallProt:
             query_chain_dir = _workdir + '/query_chains'
             if not os.path.exists(query_chain_dir):
                 os.mkdir(query_chain_dir)
-            pdbutils.split_pdb(self.para.query_pdb, query_chain_dir, set_bfac=np.log(min_nbrs))
+            pdbutils.split_pdb(self.para.query_pdb, query_chain_dir, set_bfac=np.log(self.para.min_nbrs))
             self.query_sse_list = [query_chain_dir + '/' + f for f in 
                                    os.listdir(query_chain_dir)
                                    if 'chain_' in f]
@@ -76,7 +77,7 @@ class SmallProt:
             if self.para.query_pdb:
                 pdbutils.merge_pdbs([self.para.query_pdb, self.para.seed_pdb], _seed_pdb)
             else:
-                pdbutils.merge_pdbs([self.para.seed_pdb], _seed_pdb, set_bfac=np.log(min_nbrs))
+                pdbutils.merge_pdbs([self.para.seed_pdb], _seed_pdb, set_bfac=np.log(self.para.min_nbrs))
             seed_chain_dir = _workdir + '/seed_chains'
             if not os.path.exists(seed_chain_dir):
                 os.mkdir(seed_chain_dir)
@@ -86,7 +87,7 @@ class SmallProt:
                                   if 'chain_' in f]
             self.full_sse_list.sort()
         elif self.para.query_pdb:
-            pdbutils.merge_pdbs([query_pdb], _seed_pdb, set_bfac=np.log(min_nbrs))
+            pdbutils.merge_pdbs([self.para.query_pdb], _seed_pdb, set_bfac=np.log(self.para.min_nbrs))
             self.full_sse_list = []
         else:
             raise AssertionError('Must provide either query_pdb or seed_pdb.')            
@@ -94,9 +95,9 @@ class SmallProt:
         # if necessary, determine path to exclusion PDB file
         if self.para.exclusion_pdb:
             _exclusion_pdb = _workdir + '/exclusion.pdb'
-            pdbutils.merge_pdbs([_seed_pdb, exclusion_pdb], _exclusion_pdb, 
-                                set_bfac=np.log(min_nbrs))
-            self.orig_exclusion = exclusion_pdb
+            pdbutils.merge_pdbs([_seed_pdb, self.para.exclusion_pdb], _exclusion_pdb, 
+                                set_bfac=np.log(self.para.min_nbrs))
+            self.orig_exclusion = self.para.exclusion_pdb
         else:
             _exclusion_pdb = _seed_pdb
             self.orig_exclusion = None
@@ -113,10 +114,22 @@ class SmallProt:
         self.looped_pdbs = []
         self.output_pdbs = []
 
-        self.queues[] 
-        self.queues_check = []
+        self.queues = []
+
 
     def build_protein(self):
+        """Iteratively generate a protein using MASTER and Qbits."""
+        self._generate_proteins(self.para.num_iter)
+        print('output pdbs :')
+        print('\n'.join(self.output_pdbs))
+
+    def build_protein_parallel(self):
+        """Iteratively generate a protein using MASTER and Qbits."""
+        self._generate_proteins_parallel(self.para.num_iter)
+        print('output pdbs :')
+        print('\n'.join(self.output_pdbs))
+
+    def build_protein_deprecate(self):
         """Iteratively generate a protein using MASTER and Qbits."""
         self._generate_recursive(self.para.num_iter)
         print('output pdbs :')
@@ -620,33 +633,37 @@ class SmallProt:
         while len(self.queues) > 0 or len(self.queues_check) > 0:
             if len(self.queues) > 0:
                 queue = self.queues.pop(0)
-                self.queues_check.append(1)
-                prot = _build_protein(queue[0], queue[1], queue[2], queue[3])
-                self.queues_check.pop()
+                print('--Get queue--')
+                self._const_protein(queue[0], queue[1], queue[2], queue[3])             
+        print('---out while loop---')
 
-    def _build_protein(self, pdb, exclusion_pdb, full_sse_list, recursion_order):
+    def _const_protein(self, pdb, exclusion_pdb, full_sse_list, recursion_order):
         outdir = os.path.dirname(pdb)
         #Construct final protein.
         if recursion_order == 0:
-            _build_prot_loop(pdb, exclusion_pdb, recursion_order, outdir)           
-            break
+            self._const_prot_loop(pdb, exclusion_pdb, recursion_order, outdir)        
+            return
         #Generate queries for next recursion.
-        qreps = _generate_qreps(pdb, exclusion_pdb, recursion_order, outdir)
+        qreps = self._generate_qreps(pdb, exclusion_pdb, recursion_order, outdir)
         if qreps == None:
-            break
+            return
         for i, qrep in enumerate(qreps):
             seed_sse_lists = self._prepare_seed_sses(qrep, full_sse_list)
             for j, seed_sse_list in enumerate(seed_sse_lists):
-                _add_seed_sse(self, i, qrep, j, seed_sse_list, full_sse_list, recursion_order, outdir)
-    
+                _queues = self._add_seed_sse(i, qrep, j, seed_sse_list, full_sse_list, recursion_order, outdir)
+        for _item in _queues:
+            self.queues.append(_item)   
+        #print('---add more into queue---')
+        return
+
     #The function will be called when the recursion_order == 0 to construct the final small protein.
-    def _build_prot_loop(self, pdb, exclusion_pdb, recursion_order, outdir):
+    def _const_prot_loop(self, pdb, exclusion_pdb, recursion_order, outdir):
         sat = pdbutils.satisfied_termini(pdb, self.para.max_nc_dist)
         n_sat = np.sum(sat)
         if self.para.num_iter - recursion_order - 2 > n_sat:
             # if it is impossible to satisfy all N- or C- termini within 
             # the remaining number of iterations, exit the branch early
-            break
+            return
         if n_sat >= self.para.num_iter:
             try_loopgen = False
             n_chains = len(sat)
@@ -729,14 +746,16 @@ class SmallProt:
 
     #Add new queries into the self.queues.
     def _add_seed_sse(self, i, qrep, j, seed_sse_list, full_sse_list, recursion_order, outdir):
+        _queues = []
         _workdir = '{}/{}'.format(outdir, str(i) + string.ascii_lowercase[j])
         if not os.path.exists(_workdir):
             os.mkdir(_workdir)
         _seed_pdb = _workdir + '/seed.pdb'
         pdbutils.merge_pdbs(seed_sse_list, _seed_pdb, min_nbrs=self.para.min_nbrs)
-        _full_sse_list = full_sse_list.copy().append(qrep)
+        _full_sse_list = full_sse_list.copy()
+        _full_sse_list.append(qrep)
         print('SSE List:')
-        print('\n'.join(_full_sse_list)
+        print('\n'.join(_full_sse_list))
         # compute the number of satisfied N- and C-termini
         _the_pdb = ''
         if len(_full_sse_list) > 2:
@@ -751,12 +770,68 @@ class SmallProt:
         if self.para.num_iter - recursion_order - 1 > n_sat:
             # if it is impossible to satisfy all N- or C- termini within 
             # the remaining number of iterations, exit the branch early
-            break
+            return _queues
         # if recursion_order is not 1, continue adding qbit reps 
         if recursion_order > 1:
             _exclusion_pdb = _workdir + '/exclusion.pdb'
             pdbutils.merge_pdbs([self.exclusion_pdbs[-1], qrep], _exclusion_pdb, min_nbrs=self.para.min_nbrs)
-            self.queues.append([_the_pdb, _exclusion_pdb, _full_sse_list, recursion_order - 1])
+            _queues.append([_the_pdb, _exclusion_pdb, _full_sse_list, recursion_order - 1])
+        return _queues    
             
+    ### NEW FUNCTIONS FOR GENERATING SSEs IN PARALLEL
+
+    def _generate_proteins_parallel(self, recursion_order):
+        manager = Manager()
+        pool = Pool(6)
+        queues = manager.Queue()
+
+        counter = 1
+        item = [self.pdbs[-1], self.exclusion_pdbs[-1], self.full_sse_list, recursion_order]
+        pool.apply_async(self._const_protein_parallel, (item, queues))
+
+        while counter > 0:           
+            _item = queues.get(block = True)
+            print(_item)
+            if _item == 'empty':
+                counter -= 1
+            else:
+                counter += 1
+                pool.apply_async(self._const_protein_parallel, (_item, queues))
+        print('---out while loop---')
+        pool.close()
+        pool.join()
+
+    #The current parallel is not working due to NULL 'qreps = self._generate_qreps(pdb, exclusion_pdb, recursion_order, outdir)'
+    #query.py -> qbits_search() -> 'p.parse(outdir=outdir, show_parsing_progress=False)'
+    #p.parse also apply parallel, which may cause a conflict.
+    def _const_protein_parallel(self, item, queues):
+        pdb = item[0]
+        exclusion_pdb = item[1]
+        full_sse_list = item[2]
+        recursion_order = item[3]
+        #print('Run task (%s)...' % (os.getpid()))
+        outdir = os.path.dirname(pdb)
+        #Construct final protein.
+        if recursion_order == 0:
+            self._const_prot_loop(pdb, exclusion_pdb, recursion_order, outdir) 
+            queues.put('empty', block = True)      
+            print('---_const_protein_parallel: first---')
+            return
+        #Generate queries for next recursion.
+        qreps = self._generate_qreps(pdb, exclusion_pdb, recursion_order, outdir)
+        if qreps == None:
+            print('---_const_protein_parallel: second---')
+            queues.put('empty', block = True)    
+            return
+        _queues = []
+        for i, qrep in enumerate(qreps):
+            seed_sse_lists = self._prepare_seed_sses(qrep, full_sse_list)
+            for j, seed_sse_list in enumerate(seed_sse_lists):
+                _queues = self._add_seed_sse(i, qrep, j, seed_sse_list, full_sse_list, recursion_order, outdir)
+        for _item in _queues:
+            queues.put(_item, block = True)        
+        queues.put('empty', block = True)    
+        print('---_const_protein_parallel: add more---')
+        return
 
                 

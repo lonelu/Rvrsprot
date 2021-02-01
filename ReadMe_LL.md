@@ -36,3 +36,11 @@
 ## Test Para
 from smallprot import smallprot_config
 smallprot_config.writeConfig() 
+
+## build protein2.
+from smallprot import smallprot 
+sm = smallprot.SmallProt('parameter.ini')
+sm.para.workdir
+# sm.build_protein_deprecate()
+# sm.build_protein()
+sm.build_protein_parallel()
