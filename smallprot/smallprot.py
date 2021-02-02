@@ -15,7 +15,7 @@ from itertools import product, permutations
 
 import qbits
 
-from smallprot import pdbutils, query, cluster_loops, smallprot_config
+from smallprot import pdbutils, query, cluster_loops, smallprot_config, logger
 
 class SmallProt:
     """A small protein in the process of generation by MASTER and Qbits.
@@ -59,6 +59,10 @@ class SmallProt:
         else:
             _workdir = os.getcwd() + '/output_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
             os.mkdir(_workdir)
+
+        log = logger.logger_config(log_path=_workdir + '/log.txt', logging_name='smallprot')
+        log.info("Creat Smallprot object.")
+
         _seed_pdb = _workdir + '/seed.pdb'
         # if necessary, split query pdb file into chains
         if self.para.query_pdb:
@@ -117,11 +121,14 @@ class SmallProt:
         self.queues = []
 
 
+
     def build_protein(self):
         """Iteratively generate a protein using MASTER and Qbits."""
+        log.info('Start build protein.')
         self._generate_proteins(self.para.num_iter)
         print('output pdbs :')
         print('\n'.join(self.output_pdbs))
+        log.info('Finish build protein.')
 
     def build_protein_parallel(self):
         """Iteratively generate a protein using MASTER and Qbits."""
@@ -164,16 +171,17 @@ class SmallProt:
         self.c_truncations = c_truncations
         self.chain_key_res = chain_key_res
         # generate loops
-        self._generate_loops(sat, self.workdir, self.loop_range) 
+        _full_sse_list = self.full_sse_list.copy()
+        self._generate_loops(_full_sse_list, sat, self.workdir, self.loop_range) 
         print('output pdbs :')
         print('\n'.join(self.output_pdbs))
 
     ### FUNCTIONS FOR GENERATING LOOPS
 
-    def _generate_loops(self, sat, workdir, loop_range=[3, 20]):
+    def _generate_loops(self, _full_sse_list, sat, workdir, loop_range=[3, 20]):
         n_chains = len(sat)
         # find loops for each pair of nearby N- and C-termini
-        slice_lengths = self._loop_search_fast(sat, workdir, loop_range)
+        slice_lengths = self._loop_search_fast(_full_sse_list, sat, workdir, loop_range)
         loop_success = self._get_loop_success(sat, workdir, loop_range)
         outfiles = []
         counter = 0
@@ -186,13 +194,13 @@ class SmallProt:
                     continue
                 # test whether any selection of loops avoids clashing
                 some_outfiles, counter = \
-                    self._test_topologies(workdir, p, all_centroids, 
+                    self._test_topologies(_full_sse_list, workdir, p, all_centroids, 
                                           cluster_key_res, slice_lengths, 
                                           num_clusters, n_chains, counter)
                 outfiles += some_outfiles
         self.output_pdbs += outfiles
     
-    def _loop_search(self, sat, workdir, loop_range=[3, 20]):
+    def _loop_search(self, _full_sse_list, sat, workdir, loop_range=[3, 20]):
         n_chains = len(sat)
         loop_success = np.zeros_like(sat)
         slice_lengths = np.zeros((sat.shape[0], sat.shape[1], 2), dtype=int)
@@ -213,8 +221,8 @@ class SmallProt:
             # calculate how many residues are required for an overlap region 
             # of length 10 Angstroms between the query SSEs and the loops
             slice_lengths[j, k] = \
-                pdbutils.gen_loop_query([self.full_sse_list[j], 
-                                         self.full_sse_list[k]], 
+                pdbutils.gen_loop_query([_full_sse_list[j], 
+                                         _full_sse_list[k]], 
                                         loop_query, min_nbrs=self.para.min_nbrs)
             # find loops with MASTER
             clusters_exist = True
@@ -242,7 +250,7 @@ class SmallProt:
         return loop_success, slice_lengths
 
     #Find loops for each pair of nearby N- and C-termini. return slice_lengths?
-    def _loop_search_fast(self, sat, workdir, loop_range=[3, 20]):
+    def _loop_search_fast(self, _full_sse_list, sat, workdir, loop_range=[3, 20]):
         n_chains = len(sat)
         slice_lengths = np.zeros((sat.shape[0], sat.shape[1], 2), dtype=int)
         for j, k in product(range(n_chains), repeat=2):
@@ -257,8 +265,8 @@ class SmallProt:
             loop_outfile = loop_workdir + '/stdout'
             # calculate how many residues are required for an overlap region 
             # of length 10 Angstroms between the query SSEs and the loops
-            slice_lengths[j, k] = pdbutils.gen_loop_query([self.full_sse_list[j], 
-                                                          self.full_sse_list[k]], 
+            slice_lengths[j, k] = pdbutils.gen_loop_query([_full_sse_list[j], 
+                                                          _full_sse_list[k]], 
                                                           loop_query, min_nbrs=self.para.min_nbrs)
             # find loops with MASTER
             gapLen = str(loop_range[0]) + '-' + str(loop_range[1])
@@ -396,7 +404,7 @@ class SmallProt:
         idx_max = seqs.shape[1] - slice_lengths[1]
         return [idx for idx in idxs if idx > idx_min and idx < idx_max]
 
-    def _test_topologies(self, workdir, permutation, all_centroids, 
+    def _test_topologies(self, _full_sse_list, workdir, permutation, all_centroids, 
                          cluster_key_res, slice_lengths, num_clusters, 
                          n_chains, counter):
         some_outfiles = []
@@ -427,7 +435,7 @@ class SmallProt:
                 [os.remove(filename) for filename in filenames]
                 continue
             # permute SSEs and connect with loops
-            clashing, outfile_path,  = self._connect_loops(workdir, n_chains, permutation, filenames, centroids, counter, slice_lengths)
+            clashing, outfile_path,  = self._connect_loops(_full_sse_list, workdir, n_chains, permutation, filenames, centroids, counter, slice_lengths)
             if clashing:
                 [os.remove(filename) for filename in filenames]
                 continue
@@ -479,9 +487,9 @@ class SmallProt:
         return filenames, centroids, res_ids_to_keep
         
     # permute SSEs and connect with loops    
-    def _connect_loops(self, workdir, n_chains, permutation, filenames, centroids, counter, slice_lengths):
+    def _connect_loops(self, _full_sse_list, workdir, n_chains, permutation, filenames, centroids, counter, slice_lengths):
         pdbs_to_combine = [''] * (2 * n_chains - 1)
-        pdbs_to_combine[::2] = [self.full_sse_list[idx] for idx in permutation]
+        pdbs_to_combine[::2] = [_full_sse_list[idx] for idx in permutation]
         pdbs_to_combine[1::2] = centroids
         outfile_path = workdir + '/output_{}.pdb'.format(str(counter))
         filenames.append(outfile_path)
@@ -630,18 +638,17 @@ class SmallProt:
 
     def _generate_proteins(self, recursion_order):
         self.queues.append([self.pdbs[-1], self.exclusion_pdbs[-1], self.full_sse_list, recursion_order])
-        while len(self.queues) > 0 or len(self.queues_check) > 0:
-            if len(self.queues) > 0:
-                queue = self.queues.pop(0)
-                print('--Get queue--')
-                self._const_protein(queue[0], queue[1], queue[2], queue[3])             
+        while len(self.queues) > 0:            
+            queue = self.queues.pop(0)
+            print('--Get queue--')
+            self._const_protein(queue[0], queue[1], queue[2], queue[3])             
         print('---out while loop---')
 
     def _const_protein(self, pdb, exclusion_pdb, full_sse_list, recursion_order):
         outdir = os.path.dirname(pdb)
         #Construct final protein.
         if recursion_order == 0:
-            self._const_prot_loop(pdb, exclusion_pdb, recursion_order, outdir)        
+            self._const_prot_loop(pdb, exclusion_pdb, full_sse_list, recursion_order, outdir)    
             return
         #Generate queries for next recursion.
         qreps = self._generate_qreps(pdb, exclusion_pdb, recursion_order, outdir)
@@ -650,14 +657,15 @@ class SmallProt:
         for i, qrep in enumerate(qreps):
             seed_sse_lists = self._prepare_seed_sses(qrep, full_sse_list)
             for j, seed_sse_list in enumerate(seed_sse_lists):
-                _queues = self._add_seed_sse(i, qrep, j, seed_sse_list, full_sse_list, recursion_order, outdir)
-        for _item in _queues:
-            self.queues.append(_item)   
+                self._add_seed_sse(i, qrep, j, seed_sse_list, full_sse_list, exclusion_pdb, recursion_order, outdir)
+                #_queues = self._add_seed_sse(i, qrep, j, seed_sse_list, full_sse_list, exclusion_pdb, recursion_order, outdir)
+        # for _item in _queues:
+        #     self.queues.append(_item)   
         #print('---add more into queue---')
         return
 
     #The function will be called when the recursion_order == 0 to construct the final small protein.
-    def _const_prot_loop(self, pdb, exclusion_pdb, recursion_order, outdir):
+    def _const_prot_loop(self, pdb, exclusion_pdb, full_sse_list, recursion_order, outdir):
         sat = pdbutils.satisfied_termini(pdb, self.para.max_nc_dist)
         n_sat = np.sum(sat)
         if self.para.num_iter - recursion_order - 2 > n_sat:
@@ -684,7 +692,7 @@ class SmallProt:
                 try_loopgen = try_loopgen and (compactness > 0.1)
             if try_loopgen:
                 self.looped_pdbs.append(pdb)
-                self._generate_loops(sat, _workdir, self.loop_range)
+                self._generate_loops(full_sse_list, sat, _workdir, self.loop_range)
 
     def _generate_qreps(self, pdb, exclusion_pdb, recursion_order, outdir):
         print('Adding a qbit rep.')
@@ -745,8 +753,8 @@ class SmallProt:
         return seed_sse_lists
 
     #Add new queries into the self.queues.
-    def _add_seed_sse(self, i, qrep, j, seed_sse_list, full_sse_list, recursion_order, outdir):
-        _queues = []
+    def _add_seed_sse(self, i, qrep, j, seed_sse_list, full_sse_list, exclusion_pdb, recursion_order, outdir):
+        #_queues = []
         _workdir = '{}/{}'.format(outdir, str(i) + string.ascii_lowercase[j])
         if not os.path.exists(_workdir):
             os.mkdir(_workdir)
@@ -770,13 +778,16 @@ class SmallProt:
         if self.para.num_iter - recursion_order - 1 > n_sat:
             # if it is impossible to satisfy all N- or C- termini within 
             # the remaining number of iterations, exit the branch early
-            return _queues
+            #return _queues
+            return
         # if recursion_order is not 1, continue adding qbit reps 
         if recursion_order > 1:
             _exclusion_pdb = _workdir + '/exclusion.pdb'
-            pdbutils.merge_pdbs([self.exclusion_pdbs[-1], qrep], _exclusion_pdb, min_nbrs=self.para.min_nbrs)
-            _queues.append([_the_pdb, _exclusion_pdb, _full_sse_list, recursion_order - 1])
-        return _queues    
+            pdbutils.merge_pdbs([exclusion_pdb, qrep], _exclusion_pdb, min_nbrs=self.para.min_nbrs)
+            #_queues.append([_the_pdb, _exclusion_pdb, _full_sse_list, recursion_order - 1])
+            self.queues.append([_the_pdb, _exclusion_pdb, _full_sse_list, recursion_order - 1])
+        #return _queues
+        return    
             
     ### NEW FUNCTIONS FOR GENERATING SSEs IN PARALLEL
 

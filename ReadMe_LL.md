@@ -26,10 +26,10 @@
 >> from smallprot import smallprot 
 
 ## build protein. 
->> sm = smallprot.SmallProt(query_pdb="ace2_input/query.pdb", exclusion_pdb="ace2_input/exclusion.pdb", workdir="/mnt/e/GitHub_Design/smallprot/ace2_input/output/")
+>> sm = smallprot.SmallProt(query_pdb="ace2_input/query.pdb", exclusion_pdb="ace2_input/exclusion.pdb", workdir="/mnt/e/GitHub_Design/zips/smallprot/ace2_input/output_test/")
 
 ## build loop
->> hh = smallprot.SmallProt(seed_pdb="huong/seed.pdb", workdir="/mnt/e/GitHub_Design/smallprot/huong/output/")
+>> hh = smallprot.SmallProt(seed_pdb="loop/seed.pdb", workdir="/mnt/e/GitHub_Design/zips/smallprot/loop/output/")
 >> hh.loop_seed_structure()
 
 
@@ -37,10 +37,16 @@
 from smallprot import smallprot_config
 smallprot_config.writeConfig() 
 
+
 ## build protein2.
 from smallprot import smallprot 
 sm = smallprot.SmallProt('parameter.ini')
 sm.para.workdir
 # sm.build_protein_deprecate()
-# sm.build_protein()
-sm.build_protein_parallel()
+sm.build_protein()
+# sm.build_protein_parallel()
+
+## build loop2
+from smallprot import smallprot 
+hh = smallprot.SmallProt('parameter_loop.ini')
+hh.loop_seed_structure()
