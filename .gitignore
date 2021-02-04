@@ -18,5 +18,7 @@ designs/
 huong/
 ace2_input/
 loop/
+data/
+data/nina/
 smallprot/__pycache__/
 *.pyc

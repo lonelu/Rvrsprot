@@ -60,8 +60,8 @@ class SmallProt:
             _workdir = os.getcwd() + '/output_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
             os.mkdir(_workdir)
 
-        log = logger.logger_config(log_path=_workdir + '/log.txt', logging_name='smallprot')
-        log.info("Creat Smallprot object.")
+        self.log = logger.logger_config(log_path=_workdir + '/log.txt', logging_name='smallprot')
+        self.log.info("Creat Smallprot object.")
 
         _seed_pdb = _workdir + '/seed.pdb'
         # if necessary, split query pdb file into chains
@@ -120,15 +120,13 @@ class SmallProt:
 
         self.queues = []
 
-
-
     def build_protein(self):
         """Iteratively generate a protein using MASTER and Qbits."""
-        log.info('Start build protein.')
+        self.log.info('Start build protein.')
         self._generate_proteins(self.para.num_iter)
         print('output pdbs :')
         print('\n'.join(self.output_pdbs))
-        log.info('Finish build protein.')
+        self.log.info('Finish build protein.')
 
     def build_protein_parallel(self):
         """Iteratively generate a protein using MASTER and Qbits."""
@@ -167,8 +165,8 @@ class SmallProt:
         # compute the number of satisfied N- and C-termini
         sat = pdbutils.satisfied_termini(self.pdbs[0], self.para.max_nc_dist)
         # set n_truncations and c_truncations for loop generation
-        self.n_truncations = n_truncations
-        self.c_truncations = c_truncations
+        # self.n_truncations = n_truncations
+        # self.c_truncations = c_truncations
         self.chain_key_res = chain_key_res
         # generate loops
         _full_sse_list = self.full_sse_list.copy()
@@ -176,8 +174,95 @@ class SmallProt:
         print('output pdbs :')
         print('\n'.join(self.output_pdbs))
 
+    def loop_seed_single_structure(self, direction=[], n_truncations=[0], c_truncations=[0], chain_key_res=[]):
+        if len(self.full_sse_list) == 0:
+            raise AssertionError('seed_pdb not provided to constructor.')
+        if len(self.pdbs) > 1:
+            raise AssertionError('build_protein() has already been run.')
+        # compute the number of satisfied N- and C-termini
+        sat = pdbutils.satisfied_termini(self.pdbs[0], self.para.max_nc_dist)
+        loop_target = np.zeros_like(sat)
+        for i in range(len(direction)-1):
+            j = i+1
+            if not sat[direction[i], direction[j]]:
+                self.log.info("Cannot loop the current topology.")
+                return 
+            else:
+                loop_target[direction[i], direction[j]] = 1
+        # set n_truncations and c_truncations for loop generation
+        # self.n_truncations = n_truncations
+        # self.c_truncations = c_truncations
+        self.chain_key_res = chain_key_res
+        # generate loops
+        _full_sse_list = self.full_sse_list.copy()
+        for sse in _full_sse_list:
+            self.log.info(sse)
+        #self._generate_loops(_full_sse_list, loop_target, self.workdir, self.loop_range)   
+        self._generate_trunc_loops(direction, loop_target, self.workdir, n_truncations, c_truncations, self.loop_range)     
+        print('output pdbs :')
+        print('\n'.join(self.output_pdbs))
+
     ### FUNCTIONS FOR GENERATING LOOPS
 
+    def _get_truncs(self, direction, n_truncations=[], c_truncations=[]):
+        all_n_truncs = []
+        all_c_truncs = []
+        #assume the sse are ordered in alpha beta seq
+        if len(direction)==0:
+            direction = list(range(len(direction)+1))
+        for n in n_truncations:
+            ns = [0]*len(direction)
+            cs = [0]*len(direction)
+            for i in range(len(direction)):
+                if i%2==0:
+                    ns[direction[i]] = n
+                else:
+                    cs[direction[i]] = n
+            all_n_truncs.append(ns)
+            all_c_truncs.append(cs)
+        for c in c_truncations:
+            ns = [0]*len(direction)
+            cs = [0]*len(direction)
+            for i in range(len(direction)):
+                if i%2==0:
+                    cs[direction[i]] = c
+                else:
+                    ns[direction[i]] = c
+            all_n_truncs.append(ns)
+            all_c_truncs.append(cs)
+        return all_n_truncs, all_c_truncs
+
+    def _generate_trunc_loops(self, direction, sat, workdir, n_truncations=[], c_truncations=[], loop_range=[3, 20]):
+        n_chains = len(sat)
+        # find loops for each pair of nearby N- and C-termini
+        all_n_truncs, all_c_truncs = self._get_truncs(direction, n_truncations, c_truncations)
+        for i in range(len(all_n_truncs)):
+            ns = all_n_truncs[i]
+            cs = all_c_truncs[i]
+            _workdir = workdir + '/trunc_{}_{}'.format(str(ns[0]), str(cs[0]))
+            if not os.path.exists(_workdir):
+                os.mkdir(_workdir)           
+            pdbutils.split_pdb(self.pdbs[-1], _workdir, self.para.min_nbrs, None, ns, cs)
+            _the_full_sse_list = [_workdir + '/' + path for path in os.listdir(_workdir) if 'chain_' in path]
+            slice_lengths = self._loop_search_fast(_the_full_sse_list, sat, _workdir, loop_range)
+            loop_success = self._get_loop_success(sat, _workdir, loop_range)
+            outfiles = []
+            counter = 0
+            for p in permutations(range(n_chains)):
+                # if loops were built between all successive SSEs in the 
+                # permutation of SSE order, continue on to add in the loops
+                if np.all([loop_success[p[j], p[j+1]] for j in range(n_chains - 1)]):
+                    all_centroids, num_clusters, cluster_key_res, no_clusters = self._get_top_clusters(_workdir, n_chains, slice_lengths, p, loop_range)
+                    if no_clusters:
+                        continue
+                    # test whether any selection of loops avoids clashing
+                    some_outfiles, counter = \
+                        self._test_topologies(_the_full_sse_list, _workdir, p, all_centroids, 
+                                                cluster_key_res, slice_lengths, 
+                                                num_clusters, n_chains, counter)
+                    outfiles += some_outfiles
+            self.output_pdbs += outfiles
+    
     def _generate_loops(self, _full_sse_list, sat, workdir, loop_range=[3, 20]):
         n_chains = len(sat)
         # find loops for each pair of nearby N- and C-termini

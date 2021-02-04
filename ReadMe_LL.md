@@ -49,4 +49,12 @@ sm.build_protein()
 ## build loop2
 from smallprot import smallprot 
 hh = smallprot.SmallProt('parameter_loop.ini')
-hh.loop_seed_structure()
+# hh.loop_seed_structure()
+hh.loop_seed_single_structure(direction=[2, 1, 0, 3])
+
+## test build loop trunc
+from smallprot import smallprot 
+hhh = smallprot.SmallProt('parameter_loop_truc.ini')
+n_truncations=[13, 14, 15, 16, 17, 18, 19]
+c_truncations=[0, 1, 2, 3, 4, 5]
+hhh.loop_seed_single_structure(direction=[2, 1, 0, 3], n_truncations = n_truncations, c_truncations = c_truncations)

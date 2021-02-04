@@ -194,7 +194,6 @@ def split_pdb(pdb_path, outdir, min_nbrs=0, set_bfac=None,
         io.save(outpath, select=NotDisorderedOrH())
     return outpaths
 
-
 def gen_loop_query(pdb_paths, out_path, min_nbrs=0):
     """Generate a query PDB for MASTER loop searches given input structures.
 

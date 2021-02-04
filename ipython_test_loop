@@ -13,14 +13,29 @@ from scipy.stats import mode
 from scipy.spatial.distance import cdist
 from itertools import product, permutations
 import qbits
-from smallprot import pdbutils, query, cluster_loops, smallprot
+from smallprot import pdbutils, query, cluster_loops, smallprot, smallprot_config, logger
 
-hh = smallprot.SmallProt(seed_pdb="huong/seed.pdb", workdir="/mnt/e/GitHub_Design/smallprot/huong/output1/")
-sat = pdbutils.satisfied_termini(hh.pdbs[0], hh.max_nc_dist)
+# hh = smallprot.SmallProt(seed_pdb="huong/seed.pdb", workdir="/mnt/e/GitHub_Design/smallprot/huong/output1/")
+hh = smallprot.SmallProt('parameter_loop.ini')
+
+direction=[0, 1, 2, 3]
+sat_all = pdbutils.satisfied_termini(hh.pdbs[0], hh.para.max_nc_dist)
+
+sat = np.zeros_like(sat_all)
+for i in range(len(direction)-1):
+    j = i+1
+    if not sat_all[i, j]:
+        self.log.info("Cannot loop the current topology.")
+    else:
+        sat[i, j] = 1
+
+
+_full_sse_list = hh.full_sse_list.copy()
+
 workdir = hh.workdir
 loop_range=[3, 20]
 n_chains = len(sat)
-slice_lengths = hh._loop_search_fast(sat, workdir, loop_range)
+slice_lengths = hh._loop_search_fast( _full_sse_list, sat, workdir, loop_range)
 loop_success = hh._get_loop_success(sat, workdir, loop_range)
 outfiles = []
 counter = 0
@@ -28,7 +43,7 @@ counter = 0
 for p in permutations(range(n_chains)): 
     if np.all([loop_success[p[j], p[j+1]] for j in range(n_chains - 1)]): 
         print(p) 
-p = (3, 2, 1, 0, 5, 4)
+p = (0, 1, 2, 3)
 #_get_top_clusters for one available permutation.
 all_centroids, num_clusters, cluster_key_res, no_clusters = hh._get_top_clusters(workdir, n_chains, slice_lengths, p, loop_range)
 
@@ -36,7 +51,7 @@ all_centroids, num_clusters, cluster_key_res, no_clusters = hh._get_top_clusters
 permutation = p
 some_outfiles = []
 pdb_dir = os.path.dirname(hh.pdbs[-1]) 
-pdbutils.split_pdb(hh.pdbs[-1], pdb_dir, hh.min_nbrs, None, 
+pdbutils.split_pdb(hh.pdbs[-1], pdb_dir, hh.para.min_nbrs, None, 
                            hh.n_truncations, hh.c_truncations)
 chain_pdbs = [pdb_dir + '/' + path for path 
                       in os.listdir(pdb_dir) if 'chain_' in path]
