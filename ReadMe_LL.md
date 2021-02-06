@@ -27,6 +27,7 @@
 
 ## build protein. 
 >> sm = smallprot.SmallProt(query_pdb="ace2_input/query.pdb", exclusion_pdb="ace2_input/exclusion.pdb", workdir="/mnt/e/GitHub_Design/zips/smallprot/ace2_input/output_test/")
+sm.build_protein()
 
 ## build loop
 >> hh = smallprot.SmallProt(seed_pdb="loop/seed.pdb", workdir="/mnt/e/GitHub_Design/zips/smallprot/loop/output/")
@@ -55,6 +56,11 @@ hh.loop_seed_single_structure(direction=[2, 1, 0, 3])
 ## test build loop trunc
 from smallprot import smallprot 
 hhh = smallprot.SmallProt('parameter_loop_truc.ini')
-n_truncations=[13, 14, 15, 16, 17, 18, 19]
-c_truncations=[0, 1, 2, 3, 4, 5]
+n_truncations=list(range(20))
+c_truncations=list(range(10))
+# n_truncations = [16, 17, 18, 19]
+# c_truncations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+n_truncations = [0]
+c_truncations = [0]
 hhh.loop_seed_single_structure(direction=[2, 1, 0, 3], n_truncations = n_truncations, c_truncations = c_truncations)
+# hhh.loop_seed_single_structure( n_truncations = n_truncations, c_truncations = c_truncations)
