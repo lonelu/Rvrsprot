@@ -106,6 +106,45 @@ def merge_structs(structs, slices=[]):
             structs[0][0].add(chain)
     return structs[0]
 
+def merge_save_struct(out_path, structs, slices=[]):
+    idx = 0
+    # Set chains in structures and move to first structure
+    
+    for x, structure in enumerate(structs):
+        if len(slices) == len(structs):
+            res_ids = [res.id[1] for res in structure.get_residues()]
+        chain = list(structure.get_chains())[0]
+        chain.id = string.ascii_uppercase[idx]
+        idx += 1
+        # detach residues that do not meet the neighbor threshold
+        if len(slices) == len(structs):
+            ids_to_keep = eval('res_ids[{}]'.format(slices[x]))
+            ids_to_detach = [res_id for res_id in res_ids if 
+                                res_id not in ids_to_keep]
+        else:
+            ids_to_detach = []
+        # ensure there are no floating residues
+        diffs = [ids_to_detach[i + 1] - ids_to_detach[i] for i in 
+                    range(len(ids_to_detach) - 1)]
+        for res_id, diff in zip(ids_to_detach, diffs):
+            if diff != max(diffs) and diff > 1:
+                for j in range(1, diff):
+                    ids_to_detach.append(res_id + j)
+        # remove residues in the region beyond the high-neighbor core
+        for res_id in set(ids_to_detach):        
+            chain.detach_child((' ', res_id, ' '))
+        # Don't move chains of struct[0]
+        if x == 0:
+            chain0 = list(structs[0].get_chains())[0]
+            continue
+        chain.detach_parent()
+        init_id = max([res.id[1] for res in chain0]) + 1
+        for res_id, res in enumerate(chain.get_residues()):
+            res.detach_parent()
+            res.id = (' ', init_id + res_id, ' ')
+            chain0.add(res)
+    io.set_structure(chain0)
+    io.save(out_path, select=NotDisorderedOrH())
 
 def merge_pdbs(pdb_paths, out_path, min_nbrs=0, set_bfac=None):
     """Merge a list of PDB files into one countaining all structure from each.

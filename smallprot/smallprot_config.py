@@ -66,6 +66,7 @@ class Parameter:
         self.qbits_window = 10
         self.secstruct = None
         self.min_nbrs = 1
+        self.cluster_count_cut=20,
         self.min_loop_length = 3
         self.max_loop_length=20
         self.lowest_rmsd_loop = True
@@ -88,6 +89,7 @@ def writeConfig(folderPath = ''):
                         'qbits_window': '10',
                         'secstruct': 'None',
                         'min_nbrs': '1',
+                        'cluster_count_cut': '20',
                         'min_loop_length': '3',
                         'max_loop_length': '20',
                         'lowest_rmsd_loop': 'true',
@@ -116,6 +118,7 @@ def readConfig(filePath = 'parameter.ini'):
     para.qbits_window = cfg.getint('Smallprot','qbits_window')
     para.workdir = cfg['Smallprot']['workdir'] if cfg['Smallprot']['workdir']!='None' else None
     para.min_nbrs = cfg.getint('Smallprot','min_nbrs')
+    para.cluster_count_cut = cfg.getint('Smallprot','cluster_count_cut')
     para.min_loop_length = cfg.getint('Smallprot','min_loop_length')
     para.max_loop_length = cfg.getint('Smallprot','max_loop_length')
     para.lowest_rmsd_loop = cfg.getboolean('Smallprot','lowest_rmsd_loop')
