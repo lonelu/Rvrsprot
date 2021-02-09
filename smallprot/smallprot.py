@@ -9,6 +9,7 @@ import prody as pr
 from datetime import datetime 
 from multiprocessing import Pool, Manager
 from dataclasses import dataclass
+import logomaker
 
 from scipy.stats import mode
 from scipy.spatial.distance import cdist
@@ -223,9 +224,8 @@ class SmallProt:
         print('output pdbs :')
         print('\n'.join(self.output_pdbs))
 
-    ### FUNCTIONS FOR GENERATING LOOPS
-
-    # It may be better to use z index for helix bundle.
+    ### NEW FUNCTIONS FOR GENERATING LOOPS
+    
     def _cal_win_dist(self, full_sse_list):
         qrep_xyz = []
         qrep_natoms = [0]
@@ -258,6 +258,7 @@ class SmallProt:
                 win_dists[k, x]=win_dist.index(min(win_dist))
         return qrep_nres, win_dists  
 
+    # It may be better to use z index for helix bundle.
     def _get_truncs(self, full_sse_list, sat, n_truncations=[], c_truncations=[]):
         qrep_nres, win_dists = self._cal_win_dist(full_sse_list)             
 
@@ -355,13 +356,16 @@ class SmallProt:
         #Write struct info
         self._write_file(workdir + '/summary.txt', self.infos)  
         #Find loop combine candidates.
-        combs, ps = self._extract_top_hit(n_chains, sat, cluster_count_cut)
+        combs, ps, scores = self._extract_top_hit(n_chains, sat, cluster_count_cut)
         self.combs.extend(combs)
         # #Build whole structure.
         outdir = workdir + '/output'
         if not os.path.exists(outdir):
             os.mkdir(outdir)
-        for i in range(len(combs)):
+        
+        output_cut = 30 if len(combs) > 30 else len(combs)
+        inds = np.argsort(scores)[::-1][:output_cut]
+        for i in inds:
             comb = combs[i]
             p = ps[i]
             centroids = [c.cent_pdb for c in comb]
@@ -370,9 +374,54 @@ class SmallProt:
                 continue
             structs, slices = self._connect_loops_struct(self.full_sse_list, n_chains, p, centroids)
             out_path = outdir + '/output_' + '-'.join(str(v) for v in p) + '_' + str(i) + '.pdb'
-            pdbutils.merge_save_struct(out_path, structs, slices)
-        
-             
+            pdbutils.merge_save_struct(out_path, structs, slices)      
+
+    def _get_top_cluster_summary(self, workdir, n_chains, slice_lengths, cluster_count_cut, loop_range):
+        _infos = []
+        for p in permutations(range(n_chains), 2):          
+            loop_workdir = workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])
+            for l in range(loop_range[0], loop_range[1] + 1):
+                subdir = loop_workdir + '/{}/clusters/1'.format(str(l))                 
+                try:
+                    loop_pdbs = os.listdir(subdir)
+                except:
+                    loop_pdbs = []
+                if len(loop_pdbs) > 1:
+                    sl = slice_lengths[p[0], p[1]]
+                    cluster_key_res = self._key_residues(loop_workdir + '/seq.txt', loop_pdbs, sl)                
+                    #Copy centroid pdb
+                    _cent_pdb = ''
+                    _cent_pdb_workdir = self.para.workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])
+                    if not os.path.exists(_cent_pdb_workdir):
+                        os.mkdir(_cent_pdb_workdir)
+                    if len(loop_pdbs) >= cluster_count_cut:
+                        _cent_pdb = _cent_pdb_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]]) + '_' \
+                            + workdir.split('/')[-1] + '_rg' + str(l) + '_' + str(len(loop_pdbs)) + '.pdb'
+                        # print(_cent_pdb)
+                        # print([subdir + '/' + lpdb for lpdb in loop_pdbs if 'centroid' in lpdb][0])
+                        in_pdb = [subdir + '/' + lpdb for lpdb in loop_pdbs if 'centroid' in lpdb][0]
+                        with gzip.open(in_pdb, 'rb') as f_in:
+                            with open(_cent_pdb, 'wb') as f_out:
+                                shutil.copyfileobj(f_in, f_out)  
+
+                        _cent_pdb_log = _cent_pdb_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]]) + '_' \
+                            + workdir.split('/')[-1] + '_rg' + str(l) + '_' + str(len(loop_pdbs)) + '.png'
+                        self._plot_log(loop_workdir + '/seq.txt', l, _cent_pdb_log)                   
+                        
+                    #Add summary
+                    info = Struct_info(trunc_info = loop_workdir.split('/')[-2], loop_info = loop_workdir.split('/')[-1], 
+                            loop_len = l, clust_num = len(loop_pdbs), cent_pdb = _cent_pdb, cluster_key_res = cluster_key_res)              
+                    #DO we need to check the size of the 2nd cluster
+                    subdir = loop_workdir + '/{}/clusters/2'.format(str(l))
+                    try:
+                        loop_pdbs2 = os.listdir(subdir)
+                    except:
+                        loop_pdbs2 = []
+                    if len(loop_pdbs2) > 0:
+                        info.clust_num_2nd = str(len(loop_pdbs2))               
+                    _infos.append(info)
+        return _infos
+
     def _extract_top_hit(self, n_chains, sat, cluster_count_cut):
         combs = []
         ps = []
@@ -391,8 +440,104 @@ class SmallProt:
             for comb in product(*all_keys):
                 combs.append(comb)
                 ps.append(p)
-        return combs, ps
+        scores = []
+        for comb in combs:
+            scores.append(sum([c.clust_num for c in comb]))
+        return combs, ps, scores
 
+    def _connect_loops_struct(self, _full_sse_list, n_chains, permutation, centroids):
+        backbone = ['N', 'CA', 'C', 'O']
+        pdbs_to_combine = [''] * (2 * n_chains - 1)
+        pdbs_to_combine[::2] = [_full_sse_list[idx] for idx in permutation]
+        pdbs_to_combine[1::2] = centroids
+
+        inds = [[0,0] for i in range(len(pdbs_to_combine))]
+        for i in range(len(pdbs_to_combine)-1):
+            j = i + 1
+            if i%2==0:
+                qrep_xyz = []
+                title2 = 'struct{}'.format(str(j))
+                struct2 = pdbutils.get_struct(title2, pdbs_to_combine[j], self.para.min_nbrs)
+                pos2 = [atom.get_coord() for atom in list(struct2.get_residues())[0].get_atoms() if atom.get_name() in backbone]   
+                qrep_xyz.append(np.array(pos2))
+
+                title1 = 'struct{}'.format(str(i))
+                struct1 = pdbutils.get_struct(title1, pdbs_to_combine[i], self.para.min_nbrs)
+                atoms1 = struct1.get_atoms()        
+                qrep_xyz.append(np.array([atom.get_coord() for atom in atoms1 if atom.get_name() in backbone])) 
+                
+                inds[i][1] = len(list(struct1.get_residues()))
+                inds[j][1] = len(list(struct2.get_residues()))
+                qrep_xyz = np.vstack(qrep_xyz)
+                # compute interatomic distance between SSE pairs
+                dists = cdist(qrep_xyz, qrep_xyz)
+
+                #store the minimum index.
+                pdb1_len = len(list(struct1.get_residues()))
+                win_dist = [0]*pdb1_len
+                for x in range(0, pdb1_len):                  
+                    for z in range(4):
+                        win_dist[x] += dists[z, x*4 + z]
+                ind=win_dist.index(min(win_dist[1:]))-1               
+                inds[i][1]=ind
+            else:
+                qrep_xyz = []
+                title2 = 'struct{}'.format(str(i))
+                struct2 = pdbutils.get_struct(title2, pdbs_to_combine[i], self.para.min_nbrs)
+                pos2 = [atom.get_coord() for atom in list(struct2.get_residues())[-1].get_atoms() if atom.get_name() in backbone]   
+                qrep_xyz.append(np.array(pos2))
+
+                title1 = 'struct{}'.format(str(j))
+                struct1 = pdbutils.get_struct(title1, pdbs_to_combine[j], self.para.min_nbrs)
+                atoms1 = struct1.get_atoms()        
+                qrep_xyz.append(np.array([atom.get_coord() for atom in atoms1 if atom.get_name() in backbone])) 
+
+                inds[j][1] = len(list(struct1.get_residues()))
+                inds[i][1] = len(list(struct2.get_residues()))
+                qrep_xyz = np.vstack(qrep_xyz)
+                # compute interatomic distance between SSE pairs
+                dists = cdist(qrep_xyz, qrep_xyz)
+
+                #store the minimum index.
+                pdb1_len = len(list(struct1.get_residues()))
+                win_dist = [0]*pdb1_len
+                for x in range(0, pdb1_len):                  
+                    for z in range(4):
+                        win_dist[x] += dists[z, x*4 + z]
+                ind=win_dist.index(min(win_dist[1:]))
+                inds[j][0] = ind
+                               
+        slices = [] 
+        for d in inds:
+            slices.append(slice(d[0], d[1]))
+        structs = [pdbutils.get_struct('test_' + str(i), pdbs_to_combine[i]) for i in range(len(pdbs_to_combine))]
+        return structs, slices
+
+    #check_clash for one combination of chains in top cluster. 
+    def _check_single_clash_depre(self, chain_pdbs, permutation, loop_comb):
+        centroids = []
+        res_ids_to_keep = []
+        for centroid in loop_comb:         
+            # check if loop clashes with exclusion PDB
+            # or SSEs it does not connect
+            loop_clashes = False
+            if self.orig_exclusion is not None:
+                loop_clashes = loop_clashes or \
+                    pdbutils.check_clashes([centroid.cent_pdb, self.orig_exclusion])
+            unlooped_sses = [chain_pdbs[sse_idx] for sse_idx in permutation 
+                                if sse_idx not in permutation[j:j+2]]
+            if len(self.chain_key_res) == len(unlooped_sses):
+                sse_key_res = [self.chain_key_res[p_idx] for p_idx in permutation]
+            else:
+                sse_key_res = [[]] * len(unlooped_sses)
+            loop_clashes = loop_clashes or \
+                pdbutils.check_clashes([centroid.cent_pdb] + unlooped_sses, [centroid.cluster_key_res] + sse_key_res)
+            if loop_clashes or pdbutils.check_gaps(centroid.cent_pdb):
+                break
+            centroids.append(centroid.cent_pdb)
+            res_ids_to_keep.append(centroid.cluster_key_res)
+        return centroids, res_ids_to_keep
+      
     def _write_file(self, filename, infos):
         with open(filename, 'w') as f:
             f.write('trunc_info\tloop_info\tloop_len\tclust_num\tcent_pdb\tcluster_key_res\tclust_num_2nd\n')
@@ -400,6 +545,40 @@ class SmallProt:
                 f.write(r.trunc_info + '\t' + r.loop_info + '\t' + str(r.loop_len) + '\t'
                     + str(r.clust_num) + '\t' + r.cent_pdb + '\t' + str(r.clust_num_2nd) + '\n')       
     
+    def _plot_log(self, seqfile, seqlen, filepath):
+        with open(seqfile, 'r') as f:
+            lines = f.read().split('\n')
+        all_seqs = []
+        for line in lines:
+            if len(line) > 0:
+                seq = ''
+                for res in line.split(' '):
+                    if len(res) == 3 and res[0].isalpha():
+                        seq += qbits.constants.one_letter_code[res]
+                    elif len(res) == 4 and res[0] == '[':
+                        seq += qbits.constants.one_letter_code[res[1:]]
+                    elif len(res) == 4 and res[-1] == ']':
+                        seq += qbits.constants.one_letter_code[res[:-1]]
+                all_seqs.append(seq)
+        seqs = []
+        for s in all_seqs:
+            if len(s) == 14 + seqlen:            
+                seqs.append(s)
+
+        df = logomaker.alignment_to_matrix(sequences=seqs, to_type='counts',
+                                               characters_to_ignore='-', pseudocount=0.01)
+        logo = logomaker.Logo(df,
+                         font_name='Stencil Std',
+                         color_scheme='NajafabadiEtAl2017',
+                         vpad=.1,
+                         width=.8)
+        logo.style_xticks(anchor=0, spacing=1)      
+        logo.ax.set_ylabel('Count')
+        logo.ax.set_xlim([-1, len(df)])
+        logo.fig.savefig(filepath) 
+    
+    ### FUNCTIONS FOR GENERATING LOOPS
+
     def _generate_loops(self, _full_sse_list, sat, workdir, loop_range=[3, 20]):
         n_chains = len(sat)
         # find loops for each pair of nearby N- and C-termini
@@ -546,48 +725,6 @@ class SmallProt:
                     if len(os.listdir(subdir + '/clusters')) > 0:
                         loop_success[j, k] = 1
         return loop_success
-        
-    def _get_top_cluster_summary(self, workdir, n_chains, slice_lengths, cluster_count_cut, loop_range):
-        _infos = []
-        for p in permutations(range(n_chains), 2):          
-            loop_workdir = workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])
-            for l in range(loop_range[0], loop_range[1] + 1):
-                subdir = loop_workdir + '/{}/clusters/1'.format(str(l))                 
-                try:
-                    loop_pdbs = os.listdir(subdir)
-                except:
-                    loop_pdbs = []
-                if len(loop_pdbs) > 1:
-                    sl = slice_lengths[p[0], p[1]]
-                    cluster_key_res = self._key_residues(loop_workdir + '/seq.txt', loop_pdbs, sl)                
-                    #Copy centroid pdb
-                    _cent_pdb = ''
-                    _cent_pdb_workdir = self.para.workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])
-                    if not os.path.exists(_cent_pdb_workdir):
-                        os.mkdir(_cent_pdb_workdir)
-                    if len(loop_pdbs) >= cluster_count_cut:
-                        _cent_pdb = _cent_pdb_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]]) + '_' \
-                            + workdir.split('/')[-1] + '_rg' + str(l) + '_' + str(len(loop_pdbs)) + '.pdb'
-                        # print(_cent_pdb)
-                        # print([subdir + '/' + lpdb for lpdb in loop_pdbs if 'centroid' in lpdb][0])
-                        in_pdb = [subdir + '/' + lpdb for lpdb in loop_pdbs if 'centroid' in lpdb][0]
-                        with gzip.open(in_pdb, 'rb') as f_in:
-                            with open(_cent_pdb, 'wb') as f_out:
-                                shutil.copyfileobj(f_in, f_out)                     
-                        #shutil.copy(f_in, _cent_pdb)
-                    #Add summary
-                    info = Struct_info(trunc_info = loop_workdir.split('/')[-2], loop_info = loop_workdir.split('/')[-1], 
-                            loop_len = l, clust_num = len(loop_pdbs), cent_pdb = _cent_pdb, cluster_key_res = cluster_key_res)              
-                    #DO we need to check the size of the 2nd cluster
-                    subdir = loop_workdir + '/{}/clusters/2'.format(str(l))
-                    try:
-                        loop_pdbs2 = os.listdir(subdir)
-                    except:
-                        loop_pdbs2 = []
-                    if len(loop_pdbs2) > 0:
-                        info.clust_num_2nd = str(len(loop_pdbs2))               
-                    _infos.append(info)
-        return _infos
 
     def _get_top_clusters(self, workdir, n_chains, slice_lengths, p, loop_range=[3, 20]):
         all_centroids = []
@@ -722,31 +859,6 @@ class SmallProt:
         return some_outfiles, counter
 
     #check_clash for one combination of chains in top cluster. 
-    def _check_single_clash(self, chain_pdbs, permutation, loop_comb):
-        centroids = []
-        res_ids_to_keep = []
-        for centroid in loop_comb:         
-            # check if loop clashes with exclusion PDB
-            # or SSEs it does not connect
-            loop_clashes = False
-            if self.orig_exclusion is not None:
-                loop_clashes = loop_clashes or \
-                    pdbutils.check_clashes([centroid.cent_pdb, self.orig_exclusion])
-            unlooped_sses = [chain_pdbs[sse_idx] for sse_idx in permutation 
-                                if sse_idx not in permutation[j:j+2]]
-            if len(self.chain_key_res) == len(unlooped_sses):
-                sse_key_res = [self.chain_key_res[p_idx] for p_idx in permutation]
-            else:
-                sse_key_res = [[]] * len(unlooped_sses)
-            loop_clashes = loop_clashes or \
-                pdbutils.check_clashes([centroid.cent_pdb] + unlooped_sses, [centroid.cluster_key_res] + sse_key_res)
-            if loop_clashes or pdbutils.check_gaps(centroid.cent_pdb):
-                break
-            centroids.append(centroid.cent_pdb)
-            res_ids_to_keep.append(centroid.cluster_key_res)
-        return centroids, res_ids_to_keep
-      
-    #check_clash for one combination of chains in top cluster. 
     def _check_clash(self, workdir, centroids_gz, forbidden, chain_pdbs, permutation, cluster_key_res, idxs):
         filenames = []
         centroids = []
@@ -781,76 +893,6 @@ class SmallProt:
             res_ids_to_keep.append(cluster_key_res[j][idxs[j]])
         return filenames, centroids, res_ids_to_keep
         
-
-    def _connect_loops_struct(self, _full_sse_list, n_chains, permutation, centroids):
-        backbone = ['N', 'CA', 'C', 'O']
-        pdbs_to_combine = [''] * (2 * n_chains - 1)
-        pdbs_to_combine[::2] = [_full_sse_list[idx] for idx in permutation]
-        pdbs_to_combine[1::2] = centroids
-
-        inds = [[0,0] for i in range(len(pdbs_to_combine))]
-        for i in range(len(pdbs_to_combine)-1):
-            j = i + 1
-            if i%2==0:
-                qrep_xyz = []
-                title2 = 'struct{}'.format(str(j))
-                struct2 = pdbutils.get_struct(title2, pdbs_to_combine[j], self.para.min_nbrs)
-                pos2 = [atom.get_coord() for atom in list(struct2.get_residues())[0].get_atoms() if atom.get_name() in backbone]   
-                qrep_xyz.append(np.array(pos2))
-
-                title1 = 'struct{}'.format(str(i))
-                struct1 = pdbutils.get_struct(title1, pdbs_to_combine[i], self.para.min_nbrs)
-                atoms1 = struct1.get_atoms()        
-                qrep_xyz.append(np.array([atom.get_coord() for atom in atoms1 if atom.get_name() in backbone])) 
-                
-                inds[i][1] = len(list(struct1.get_residues()))
-                inds[j][1] = len(list(struct2.get_residues()))
-                qrep_xyz = np.vstack(qrep_xyz)
-                # compute interatomic distance between SSE pairs
-                dists = cdist(qrep_xyz, qrep_xyz)
-
-                #store the minimum index.
-                pdb1_len = len(list(struct1.get_residues()))
-                win_dist = [0]*pdb1_len
-                for x in range(0, pdb1_len):                  
-                    for z in range(4):
-                        win_dist[x] += dists[z, x*4 + z]
-                ind=win_dist.index(min(win_dist[1:]))-1               
-                inds[i][1]=ind
-            else:
-                qrep_xyz = []
-                title2 = 'struct{}'.format(str(i))
-                struct2 = pdbutils.get_struct(title2, pdbs_to_combine[i], self.para.min_nbrs)
-                pos2 = [atom.get_coord() for atom in list(struct2.get_residues())[-1].get_atoms() if atom.get_name() in backbone]   
-                qrep_xyz.append(np.array(pos2))
-
-                title1 = 'struct{}'.format(str(j))
-                struct1 = pdbutils.get_struct(title1, pdbs_to_combine[j], self.para.min_nbrs)
-                atoms1 = struct1.get_atoms()        
-                qrep_xyz.append(np.array([atom.get_coord() for atom in atoms1 if atom.get_name() in backbone])) 
-
-                inds[j][1] = len(list(struct1.get_residues()))
-                inds[i][1] = len(list(struct2.get_residues()))
-                qrep_xyz = np.vstack(qrep_xyz)
-                # compute interatomic distance between SSE pairs
-                dists = cdist(qrep_xyz, qrep_xyz)
-
-                #store the minimum index.
-                pdb1_len = len(list(struct1.get_residues()))
-                win_dist = [0]*pdb1_len
-                for x in range(0, pdb1_len):                  
-                    for z in range(4):
-                        win_dist[x] += dists[z, x*4 + z]
-                ind=win_dist.index(min(win_dist[1:]))
-                inds[j][0] = ind
-                               
-        slices = [] 
-        for d in inds:
-            slices.append(slice(d[0], d[1]))
-        structs = [pdbutils.get_struct('test_' + str(i), pdbs_to_combine[i]) for i in range(len(pdbs_to_combine))]
-        return structs, slices
-
-
     # permute SSEs and connect with loops      
     def _connect_loops(self, _full_sse_list, workdir, n_chains, permutation, filenames, centroids, counter, slice_lengths):
         pdbs_to_combine = [''] * (2 * n_chains - 1)
@@ -1057,7 +1099,7 @@ class SmallProt:
                 try_loopgen = try_loopgen and (compactness > 0.1)
             if try_loopgen:
                 self.looped_pdbs.append(pdb)
-                self._generate_loops(full_sse_list, sat, _workdir, self.loop_range)
+                self._generate_loops(full_sse_list, sat, outdir, self.loop_range)
 
     def _generate_qreps(self, pdb, exclusion_pdb, recursion_order, outdir):
         print('Adding a qbit rep.')
@@ -1189,7 +1231,7 @@ class SmallProt:
         outdir = os.path.dirname(pdb)
         #Construct final protein.
         if recursion_order == 0:
-            self._const_prot_loop(pdb, exclusion_pdb, recursion_order, outdir) 
+            self._const_prot_loop(pdb, exclusion_pdb, full_sse_list, recursion_order, outdir) 
             queues.put('empty', block = True)      
             print('---_const_protein_parallel: first---')
             return
