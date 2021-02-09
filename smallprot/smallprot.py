@@ -10,6 +10,7 @@ from datetime import datetime
 from multiprocessing import Pool, Manager
 from dataclasses import dataclass
 import logomaker
+import matplotlib.pyplot as plt
 
 from scipy.stats import mode
 from scipy.spatial.distance import cdist
@@ -395,18 +396,22 @@ class SmallProt:
                     if not os.path.exists(_cent_pdb_workdir):
                         os.mkdir(_cent_pdb_workdir)
                     if len(loop_pdbs) >= cluster_count_cut:
-                        _cent_pdb = _cent_pdb_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]]) + '_' \
-                            + workdir.split('/')[-1] + '_rg' + str(l) + '_' + str(len(loop_pdbs)) + '.pdb'
+                        _cent = _cent_pdb_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]]) + '_' \
+                            + workdir.split('/')[-1] + '_rg' + str(l) + '_' + str(len(loop_pdbs))
+                        _cent_pdb = _cent + '.pdb'
                         # print(_cent_pdb)
                         # print([subdir + '/' + lpdb for lpdb in loop_pdbs if 'centroid' in lpdb][0])
                         in_pdb = [subdir + '/' + lpdb for lpdb in loop_pdbs if 'centroid' in lpdb][0]
                         with gzip.open(in_pdb, 'rb') as f_in:
                             with open(_cent_pdb, 'wb') as f_out:
                                 shutil.copyfileobj(f_in, f_out)  
+                    
+                        _cent_pdb_log = _cent + '.png'
+                        self._plot_log(loop_workdir + '/seq.txt', l, _cent_pdb_log)               
 
-                        _cent_pdb_log = _cent_pdb_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]]) + '_' \
-                            + workdir.split('/')[-1] + '_rg' + str(l) + '_' + str(len(loop_pdbs)) + '.png'
-                        self._plot_log(loop_workdir + '/seq.txt', l, _cent_pdb_log)                   
+                        _cent_pdb_phipsi = _cent + '_phipsi.png'
+                        phipsi = pdbutils.meaure_phipsi(_cent_pdb)
+                        self._plot_phipsi(phipsi, _cent_pdb_phipsi)    
                         
                     #Add summary
                     info = Struct_info(trunc_info = loop_workdir.split('/')[-2], loop_info = loop_workdir.split('/')[-1], 
@@ -575,8 +580,16 @@ class SmallProt:
         logo.style_xticks(anchor=0, spacing=1)      
         logo.ax.set_ylabel('Count')
         logo.ax.set_xlim([-1, len(df)])
-        logo.fig.savefig(filepath) 
-    
+        #logo.fig.savefig(filepath) 
+        plt.savefig(filepath)
+        plt.close()
+
+    def _plot_phipsi(self, phipsi, filepath):
+        x = list(range(1, len(phipsi)+1))
+        plt.plot(x, phipsi)
+        plt.savefig(filepath)
+        plt.close()
+
     ### FUNCTIONS FOR GENERATING LOOPS
 
     def _generate_loops(self, _full_sse_list, sat, workdir, loop_range=[3, 20]):

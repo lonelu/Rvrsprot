@@ -9,12 +9,13 @@ import numba
 from scipy.linalg import toeplitz
 from scipy.spatial import Delaunay
 from scipy.spatial.distance import cdist
-from Bio.PDB import PDBParser, PDBIO, Select
+from Bio.PDB import PDBParser, PDBIO, Select, Polypeptide
 from qbits import convex_hull, pdb, clash
 from itertools import combinations
 
 parser = PDBParser(QUIET=True)
 io = PDBIO()
+ppb = Polypeptide.PPBuilder()
 
 class NotDisorderedOrH(Select):
     def accept_atom(self, atom):
@@ -145,6 +146,25 @@ def merge_save_struct(out_path, structs, slices=[]):
             chain0.add(res)
     io.set_structure(chain0)
     io.save(out_path, select=NotDisorderedOrH())
+
+def meaure_phipsi(structpath):
+    structname = structpath.split('/')[-1]
+    struct = parser.get_structure(structname, structpath)
+    pp = ppb.build_peptides(struct)[0]
+    phipsi = pp.get_phi_psi_list()
+    phipsi_180 = []
+    for hs in phipsi:
+        if hs[0] == None:
+            phipsi_180.append(0)  
+        else:
+            phipsi_180.append(hs[0]/3.14159265*180)
+
+        if hs[1] == None:
+            phipsi_180.append(0)
+        else:  
+            phipsi_180.append(hs[1]/3.14159265*180)
+    return phipsi_180
+
 
 def merge_pdbs(pdb_paths, out_path, min_nbrs=0, set_bfac=None):
     """Merge a list of PDB files into one countaining all structure from each.
