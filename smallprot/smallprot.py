@@ -18,16 +18,17 @@ from itertools import product, permutations
 
 import qbits
 
-from smallprot import pdbutils, query, cluster_loops, smallprot_config, logger
+from smallprot import pdbutils, query, cluster_loops, smallprot_config, logger, peputils
 
 @dataclass
 class Struct_info:
     trunc_info: str
     loop_info: str
-    loop_len: int
-    clust_num: int
+    loop_len: int 
     cent_pdb:str
+    clust_num: int   
     cluster_key_res : []
+    redundancy:str = "New" 
     clust_num_2nd: int = 0
 
 class SmallProt:
@@ -248,7 +249,7 @@ class SmallProt:
 
         #calcualte distances (with window = 7) between two the first sse and another sse, 
         #store the minimum index.
-        win_dists = np.zeros((4, qrep_nres[0]- 6))
+        win_dists = np.zeros((n_reps, qrep_nres[0]- 6))
         win_dists[0] = np.arange(qrep_nres[0]- 6)
         for k in range(1, n_reps):
             for x in range(qrep_nres[0]- 6):
@@ -353,12 +354,18 @@ class SmallProt:
             #loop_success = self._get_loop_success(the_sat, _workdir, loop_range)      
             #Summarize loops
             _infos = self._get_top_cluster_summary(_workdir, n_chains, slice_lengths, cluster_count_cut, loop_range)
-            self.infos.extend(_infos)
+            self.infos.extend(_infos)   
+
+        #Remove redundency. Some loops share the same structure. 
+        reduced_order_infos = self._remove_redundancy(cluster_count_cut)
+
         #Write struct info
-        self._write_file(workdir + '/summary.txt', self.infos)  
+        self._write_file(workdir + '/summary.txt', self.infos) 
+
         #Find loop combine candidates.
-        combs, ps, scores = self._extract_top_hit(n_chains, sat, cluster_count_cut)
+        combs, ps, scores = self._extract_top_hit(reduced_order_infos, n_chains, sat, cluster_count_cut)
         self.combs.extend(combs)
+
         # #Build whole structure.
         outdir = workdir + '/output'
         if not os.path.exists(outdir):
@@ -427,7 +434,54 @@ class SmallProt:
                     _infos.append(info)
         return _infos
 
-    def _extract_top_hit(self, n_chains, sat, cluster_count_cut):
+    def _remove_redundancy(self, cluster_count_cut):
+        reduced_order_infos = []
+        
+        #sort_all_infos = sorted(self.infos, key = lambda x: x.clust_num, reverse = True)
+
+        #sort_infos = [info for info in sort_all_infos if info.clust_num >= cluster_count_cut]
+        self.infos.sort(key = lambda x: x.clust_num, reverse = True) 
+        redundant_inds = []
+        # for i in range(len(sort_infos)-1):
+        #     if i in redundant_inds:               
+        #         continue
+        #     reduced_order_infos.append(sort_infos[i])
+        #     for j in range(i+1, len(sort_infos)-1):
+        #         if j in redundant_inds:
+        #             continue
+        #         if sort_infos[i].loop_len <= sort_infos[j].loop_len:
+        #             min_dist, min_dist_ind = peputils.cal_sse_dist([sort_infos[i].cent_pdb, sort_infos[j].cent_pdb])
+        #         else:
+        #             min_dist, min_dist_ind = peputils.cal_sse_dist([sort_infos[j].cent_pdb, sort_infos[i].cent_pdb])
+        #         if min_dist < 0.5:
+        #             redundant_inds.append(j)
+        for i in range(len(self.infos)-1):
+            if i in redundant_inds or self.infos[i].cent_pdb=='':             
+                continue
+            reduced_order_infos.append(self.infos[i])
+            for j in range(i+1, len(self.infos)-1):
+                if self.infos[j].cent_pdb=='':
+                    continue
+                if j in redundant_inds:
+                    self.infos[j].redundancy = self.infos[i].trunc_info + " " + self.infos[i].loop_info + " " + str(self.infos[i].loop_len)
+                    continue
+                if self.infos[i].loop_len <= self.infos[j].loop_len:
+                    min_dist, min_dist_ind = peputils.cal_sse_dist([self.infos[i].cent_pdb, self.infos[j].cent_pdb])
+                else:
+                    min_dist, min_dist_ind = peputils.cal_sse_dist([self.infos[j].cent_pdb, self.infos[i].cent_pdb])
+                if min_dist < 0.5:
+                    redundant_inds.append(j)
+
+        outdir = self.workdir + '/reduced_loops'
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+        for v in reduced_order_infos:
+            dst_dir = outdir + '/' + v.cent_pdb.split('/')[-1]
+            shutil.copy(v.cent_pdb,dst_dir)
+
+        return reduced_order_infos
+
+    def _extract_top_hit(self, reduced_order_infos, n_chains, sat, cluster_count_cut):
         combs = []
         ps = []
         for p in permutations(range(n_chains)):
@@ -437,18 +491,37 @@ class SmallProt:
             for j in range(n_chains-1):
                 k = j+1
                 loop_key = 'loops_{}_{}'.format(string.ascii_uppercase[p[j]], string.ascii_uppercase[p[k]])
-                keys = [key for key in self.infos if loop_key in key.loop_info]
+                keys = [key for key in reduced_order_infos if loop_key in key.loop_info]
                 values = [v.clust_num for v in keys]
                 all_keys.append([keys[i] for i in np.argsort(values) if values[i] > cluster_count_cut])
             if 0 in [len(v) for v in all_keys]:
                 continue
             for comb in product(*all_keys):
+                if self._check_comb_validity(comb):
+                    continue
                 combs.append(comb)
                 ps.append(p)
         scores = []
         for comb in combs:
             scores.append(sum([c.clust_num for c in comb]))
         return combs, ps, scores
+
+    #Currently, if the distance between mid residues of two loops on the same sides should be smaller than a certain number.
+    def _check_comb_validity(self, comb, loop_distance_cut = 15):
+        n_side = comb[0::2]
+        c_side = comb[1::2]
+        if len(n_side) >= 2:
+            for j, k in product(range(len(n_side)), repeat = 2):
+                dist = peputils.cal_loop_mid_dist([n_side[j].cent_pdb, n_side[k].cent_pdb])
+                if dist > loop_distance_cut:
+                    return False
+        if len(c_side) >= 2:
+            for j, k in product(range(len(c_side)), repeat = 2):
+                dist = peputils.cal_loop_mid_dist([c_side[j].cent_pdb, c_side[k].cent_pdb])
+                if dist > loop_distance_cut:
+                    return False
+        return True
+
 
     def _connect_loops_struct(self, _full_sse_list, n_chains, permutation, centroids):
         backbone = ['N', 'CA', 'C', 'O']
@@ -545,10 +618,10 @@ class SmallProt:
       
     def _write_file(self, filename, infos):
         with open(filename, 'w') as f:
-            f.write('trunc_info\tloop_info\tloop_len\tclust_num\tcent_pdb\tcluster_key_res\tclust_num_2nd\n')
+            f.write('trunc_info\tloop_info\tloop_len\tclust_num\tcent_pdb\tredundancy\tcluster_key_res\tclust_num_2nd\n')
             for r in infos:
                 f.write(r.trunc_info + '\t' + r.loop_info + '\t' + str(r.loop_len) + '\t'
-                    + str(r.clust_num) + '\t' + r.cent_pdb + '\t' + str(r.clust_num_2nd) + '\n')       
+                    + str(r.clust_num) + '\t' + r.redundancy + '\t'+ r.cent_pdb + '\t' + str(r.clust_num_2nd) + '\n')       
     
     def _plot_log(self, seqfile, seqlen, filepath):
         with open(seqfile, 'r') as f:
