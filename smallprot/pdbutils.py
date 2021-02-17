@@ -151,7 +151,7 @@ def gen_loop_query_win(pdb_paths, out_path, inds, trunc, loop_query_win = 7, min
     structs = [] 
     slices = []
     counter = 0
-    print(trunc)
+    #print(trunc)
     for ind in inds:
         title = 'struct' + str(ind)
         structs.append(get_struct(title, pdb_paths[ind], min_nbrs))
