@@ -25,3 +25,30 @@ hydro_dict = {'LYS': [-3.9, -0.99, 2.71, 5.39, -3.46],
           'HIS': [-3.2, -0.96, 2.06, 4.76, -1.44],
           'MSE': [1.9, 0.23, -0.10, -0.76, 1.40]
           }
+
+
+# Based on paper "Intrinsic Secondary Structure Propensities of the Amino Acids, Using Statistical Matrices: Comparison With Experimental Scales"
+propensity_scale = ['alpha_helix', 'ww', 'hh', 'mf', 'tt']
+
+propensity_dict = {'LYS': [0.615, 0, 0, 0, 0],
+          'ASP': [0.870, 0, 0, 0, 0],
+          'PHE': [0.706, 0, 0, 0, 0],
+          'ASN': [0.906, 0, 0, 0, 0],
+          'GLN': [0.594, 0, 0, 0, 0],
+          'ALA': [0.432, 0, 0, 0, 0],
+          'ARG': [0.503, 0, 0, 0, 0],
+          'THR': [0.884, 0, 0, 0, 0],
+          'GLY': [1.162, 0, 0, 0, 0],
+          'TYR': [0.778, 0, 0, 0, 0],
+          'LEU': [0.494, 0, 0, 0, 0],
+          'VAL': [0.706, 0, 0, 0, 0],
+          'GLU': [0.167, 0, 0, 0, 0],
+          'PRO': [1.945, 0, 0, 0, 0],
+          'SER': [0.928, 0, 0, 0, 0],
+          'CYS': [0.877, 0, 0, 0, 0],
+          'MET': [0.444, 0, 0, 0, 0],
+          'TRP': [0.690, 0, 0, 0, 0],
+          'ILE': [0.566, 0, 0, 0, 0],
+          'HIS': [0.802, 0, 0, 0, 0],
+          'MSE': [0.444, 0, 0, 0, 0],
+          }
