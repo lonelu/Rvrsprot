@@ -65,14 +65,15 @@ class Parameter:
         self.qbits_rmsd = 1.5
         self.qbits_window = 10
         self.secstruct = None
-        self.min_nbrs = 1
-        self.cluster_count_cut=20,
-        self.min_loop_length = 3
-        self.max_loop_length=20
+        self.min_nbrs = 1       
         self.lowest_rmsd_loop = True
         self.database='/mnt/e/GitHub_Design/Qbits/database'
-        self.loop_target_list='/mnt/e/GitHub_Design/master_db/list'
-
+        self.loop_target_list='/mnt/e/GitHub_Design/master_db/list'   
+        self.loop_query_win =7   
+        self.min_loop_length = 3
+        self.max_loop_length=20
+        self.cluster_count_cut=20
+        self.loop_distance_cut=15
 #Write and Read Parameters used for Smallprot
 
 def writeConfig(folderPath = ''):
@@ -89,12 +90,14 @@ def writeConfig(folderPath = ''):
                         'qbits_window': '10',
                         'secstruct': 'None',
                         'min_nbrs': '1',
-                        'cluster_count_cut': '20',
-                        'min_loop_length': '3',
-                        'max_loop_length': '20',
                         'lowest_rmsd_loop': 'true',
                         'database': '/mnt/e/GitHub_Design/Qbits/database',
-                        'loop_target_list': '/mnt/e/GitHub_Design/master_db/list'}
+                        'loop_target_list': '/mnt/e/GitHub_Design/master_db/list',  
+                        'loop_query_win': '7',                      
+                        'min_loop_length': '3',
+                        'max_loop_length': '20',
+                        'cluster_count_cut': '20',
+                        'loop_distance_cut': '15',}
 
     with open(folderPath + 'parameter.ini', 'w') as configfile:
         config.write(configfile)
@@ -118,12 +121,14 @@ def readConfig(filePath = 'parameter.ini'):
     para.qbits_window = cfg.getint('Smallprot','qbits_window')
     para.workdir = cfg['Smallprot']['workdir'] if cfg['Smallprot']['workdir']!='None' else None
     para.min_nbrs = cfg.getint('Smallprot','min_nbrs')
-    para.cluster_count_cut = cfg.getint('Smallprot','cluster_count_cut')
-    para.min_loop_length = cfg.getint('Smallprot','min_loop_length')
-    para.max_loop_length = cfg.getint('Smallprot','max_loop_length')
     para.lowest_rmsd_loop = cfg.getboolean('Smallprot','lowest_rmsd_loop')
     para.database = cfg['Smallprot']['database'] if cfg['Smallprot']['database']!='None' else None
-    para.loop_target_list = cfg['Smallprot']['loop_target_list'] if cfg['Smallprot']['loop_target_list']!='None' else None
+    para.loop_target_list = cfg['Smallprot']['loop_target_list'] if cfg['Smallprot']['loop_target_list']!='None' else None 
+    para.loop_query_win = cfg.getint('Smallprot', 'loop_query_win')  
+    para.min_loop_length = cfg.getint('Smallprot','min_loop_length')
+    para.max_loop_length = cfg.getint('Smallprot','max_loop_length')
+    para.cluster_count_cut = cfg.getint('Smallprot','cluster_count_cut')
+    para.loop_distance_cut = cfg.getint('Smallprot','loop_distance_cut')
     return para
 
 

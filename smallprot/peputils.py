@@ -38,7 +38,7 @@ def cal_sse_dist(sse_list):
         for z in range(qrep_nres[0]*4):
             win_dists[y] += dists[qrep_natoms[0] + z, qrep_natoms[1] + y*4 + z]
     min_dist_ind = np.argmin(win_dists)
-    min_dist = win_dists[min_dist_ind]
+    min_dist = win_dists[min_dist_ind]/(qrep_nres[0]*4)
 
     return min_dist, min_dist_ind
 
@@ -49,15 +49,16 @@ def cal_aa_dist(sse_list):
 
     qrep_natoms, qrep_nres, dists = cal_cdist(sse_list)
 
-    if qrep_nres[0] != qrep_nres[1]:
-        raise AssertionError('sse_list 2 sses does not have equal length.')
-    win_dists = np.zeros(qrep_nres[0])
-    for y in range(qrep_nres[0]):
-        for z in range(4):
-            win_dists[y] += dists[qrep_natoms[0] + y*4 + z, qrep_natoms[1] + y*4 + z ]  
-    min_dist_ind = np.argmin(win_dists)
+    # if qrep_nres[0] != qrep_nres[1]:
+    #     raise AssertionError('sse_list 2 sses does not have equal length.')
+    win_dists = np.zeros((qrep_nres[0], qrep_nres[1]))
+    for i in range(qrep_nres[0]):
+        for j in range(qrep_nres[1]):
+            for z in range(4):
+                win_dists[i, j] += dists[qrep_natoms[0] + i*4 + z, qrep_natoms[1] + j*4 + z]      
+    min_dist_ind = np.unravel_index(win_dists.argmin(), win_dists.shape)
     min_dist = win_dists[min_dist_ind]
-    return min_dist, min_dist_ind
+    return min_dist, min_dist_ind, qrep_nres
 
 def cal_loop_mid_dist(sse_list):
     n_reps = len(sse_list)

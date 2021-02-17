@@ -147,6 +147,22 @@ def merge_save_struct(out_path, structs, slices=[]):
     io.set_structure(chain0)
     io.save(out_path, select=NotDisorderedOrH())
 
+def gen_loop_query_win(pdb_paths, out_path, inds, trunc, loop_query_win = 7, min_nbrs=0):
+    structs = [] 
+    slices = []
+    counter = 0
+    print(trunc)
+    for ind in inds:
+        title = 'struct' + str(ind)
+        structs.append(get_struct(title, pdb_paths[ind], min_nbrs))
+        for chain in structs[-1].get_chains():
+            chain.id = string.ascii_uppercase[25 - counter]
+            counter += 1     
+        slices.append(slice(int(trunc[ind]), int(trunc[ind]+ loop_query_win)))
+    final_struct = merge_structs(structs, slices)
+    io.set_structure(final_struct)
+    io.save(out_path, select=NotDisorderedOrH())
+
 def meaure_phipsi(structpath):
     structname = structpath.split('/')[-1]
     struct = parser.get_structure(structname, structpath)
@@ -311,8 +327,7 @@ def gen_loop_query(pdb_paths, out_path, min_nbrs=0):
     io.set_structure(final_struct)
     io.save(out_path, select=NotDisorderedOrH())
     return slice_lengths
-
-
+  
 def satisfied_termini(pdb_path, max_nc_dist):
     """Calculate array of of N/C terminus pairs within a given distance.
 
@@ -606,3 +621,5 @@ def check_gaps(pdb_path):
         if dists[i, i+1] > 2.:
             gaps_exist = True
     return gaps_exist
+
+    
