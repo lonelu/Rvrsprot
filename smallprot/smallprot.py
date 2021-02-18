@@ -28,7 +28,6 @@ class Struct_info:
     loop_len: int 
     cent_pdb:str
     clust_num: int   
-    #cluster_key_res : []
     redundancy:str = "Unknown" 
     clust_num_2nd: int = 0
 
@@ -66,7 +65,7 @@ class SmallProt:
         if os.path.exists(para_file_path):
             self.para = smallprot_config.readConfig(para_file_path)
         else:
-            self.para = Parameter()
+            self.para = smallprot_config.Parameter()
         if self.para.workdir:
             _workdir = os.path.realpath(self.para.workdir)
             if not os.path.exists(_workdir):
@@ -226,8 +225,7 @@ class SmallProt:
             self.log.info(sse)
         #self._generate_loops(_full_sse_list, sat, self.workdir, self.loop_range)   
         self._generate_trunc_loops(direction, sat, self.workdir, n_truncations, c_truncations, self.para.cluster_count_cut, self.loop_range)     
-        print('output pdbs :')
-        print('\n'.join(self.output_pdbs))
+        self.log.info('Finish build protein.')
 
     ### NEW FUNCTIONS FOR GENERATING LOOPS
     
