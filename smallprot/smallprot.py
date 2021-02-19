@@ -61,30 +61,33 @@ class SmallProt:
         constructor as its seed_pdb argument.
     """
 
-    def __init__(self, para_file_path = 'parameter.ini'):
+    def __init__(self, query_pdb, seed_pdb, exclusion_pdb, workdir, para_file_path = 'parameter.ini'):
         if os.path.exists(para_file_path):
             self.para = smallprot_config.readConfig(para_file_path)
         else:
             self.para = smallprot_config.Parameter()
-        if self.para.workdir:
-            _workdir = os.path.realpath(self.para.workdir)
+        if workdir:
+            _workdir = os.path.realpath(workdir)
             if not os.path.exists(_workdir):
                 os.mkdir(_workdir)
         else:
-            _workdir = os.getcwd() + '/output_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-            self.para.workdir = _workdir
+            _workdir = os.getcwd() + '/output_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')          
             os.mkdir(_workdir)
-
+        #--------------------------------
         self.log = logger.logger_config(log_path=_workdir + '/log.txt', logging_name='smallprot')
         self.log.info("Creat Smallprot object.")
-
+        self.log.info("query_pdb: {}".format(query_pdb))
+        self.log.info("seed_pdb: {}".format(seed_pdb))
+        self.log.info("exclusion_pdb: {}".format(exclusion_pdb))
+        smallprot_config.write(_workdir, self.para)
+        #--------------------------------
         _seed_pdb = _workdir + '/seed.pdb'
         # if necessary, split query pdb file into chains
-        if self.para.query_pdb:
+        if query_pdb:
             query_chain_dir = _workdir + '/query_chains'
             if not os.path.exists(query_chain_dir):
                 os.mkdir(query_chain_dir)
-            pdbutils.split_pdb(self.para.query_pdb, query_chain_dir, set_bfac=np.log(self.para.min_nbrs))
+            pdbutils.split_pdb(query_pdb, query_chain_dir, set_bfac=np.log(self.para.min_nbrs))
             self.query_sse_list = [query_chain_dir + '/' + f for f in 
                                    os.listdir(query_chain_dir)
                                    if 'chain_' in f]
@@ -92,31 +95,31 @@ class SmallProt:
         else:
             self.query_sse_list = []
         # if necessary, prepare seed pdb files
-        if self.para.seed_pdb:
-            if self.para.query_pdb:
-                pdbutils.merge_pdbs([self.para.query_pdb, self.para.seed_pdb], _seed_pdb)
+        if seed_pdb:
+            if query_pdb:
+                pdbutils.merge_pdbs([query_pdb, seed_pdb], _seed_pdb)
             else:
-                pdbutils.merge_pdbs([self.para.seed_pdb], _seed_pdb, set_bfac=np.log(self.para.min_nbrs))
+                pdbutils.merge_pdbs([seed_pdb], _seed_pdb, set_bfac=np.log(self.para.min_nbrs))
             seed_chain_dir = _workdir + '/seed_chains'
             if not os.path.exists(seed_chain_dir):
                 os.mkdir(seed_chain_dir)
-            pdbutils.split_pdb(self.para.seed_pdb, seed_chain_dir)
+            pdbutils.split_pdb(seed_pdb, seed_chain_dir)
             self.full_sse_list = [seed_chain_dir + '/' + f for f in 
                                   os.listdir(seed_chain_dir)
                                   if 'chain_' in f]
             self.full_sse_list.sort()
-        elif self.para.query_pdb:
-            pdbutils.merge_pdbs([self.para.query_pdb], _seed_pdb, set_bfac=np.log(self.para.min_nbrs))
+        elif query_pdb:
+            pdbutils.merge_pdbs([query_pdb], _seed_pdb, set_bfac=np.log(self.para.min_nbrs))
             self.full_sse_list = []
         else:
             raise AssertionError('Must provide either query_pdb or seed_pdb.')            
         self.pdbs = [_seed_pdb]
         # if necessary, determine path to exclusion PDB file
-        if self.para.exclusion_pdb:
+        if exclusion_pdb:
             _exclusion_pdb = _workdir + '/exclusion.pdb'
-            pdbutils.merge_pdbs([_seed_pdb, self.para.exclusion_pdb], _exclusion_pdb, 
+            pdbutils.merge_pdbs([_seed_pdb, exclusion_pdb], _exclusion_pdb, 
                                 set_bfac=np.log(self.para.min_nbrs))
-            self.orig_exclusion = self.para.exclusion_pdb
+            self.orig_exclusion = exclusion_pdb
         else:
             _exclusion_pdb = _seed_pdb
             self.orig_exclusion = None
@@ -412,7 +415,7 @@ class SmallProt:
                 if len(loop_pdbs) > 1:              
                     #Copy centroid pdb
                     _cent_pdb = ''
-                    _cent_pdb_workdir = self.para.workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])
+                    _cent_pdb_workdir = self.workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])
                     if not os.path.exists(_cent_pdb_workdir):
                         os.mkdir(_cent_pdb_workdir)
                     if len(loop_pdbs) >= cluster_count_cut:

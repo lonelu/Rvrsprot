@@ -54,10 +54,6 @@ import configparser
 """
 class Parameter:
     def __init__(self):
-        self.query_pdb = None
-        self.seed_pdb = None
-        self.exclusion_pdb = None
-        self.workdir = None
         self.num_iter = 3
         self.max_nc_dist = 15.0
         self.screen_compactness = False
@@ -78,10 +74,7 @@ class Parameter:
 
 def writeConfig(folderPath = ''):
     config = configparser.ConfigParser()
-    config['Smallprot'] = {'query_pdb': 'None',
-                        'seed_pdb': 'None',
-                        'exclusion_pdb': 'None',
-                        'workdir': 'None',
+    config['Smallprot'] = {
                         'num_iter': '3',
                         'max_nc_dist': '15',
                         'screen_compactness': 'false',
@@ -97,7 +90,33 @@ def writeConfig(folderPath = ''):
                         'min_loop_length': '3',
                         'max_loop_length': '20',
                         'cluster_count_cut': '20',
-                        'loop_distance_cut': '15',}
+                        'loop_distance_cut': '15',
+                        }
+
+    with open(folderPath + 'parameter.ini', 'w') as configfile:
+        config.write(configfile)
+
+
+def writeConfig(folderPath = '', para):
+    config = configparser.ConfigParser()
+    config['Smallprot'] = {
+                        'num_iter': str(para.num_iter),
+                        'max_nc_dist': str(para.max_nc_dist),
+                        'screen_compactness': str(para.screen_compactness),
+                        'rmsdCut': str(para.rmsdCut),
+                        'qbits_rmsd': str(para.qbits_rmsd),
+                        'qbits_window': str(para.qbits_window),
+                        'secstruct': str(para.secstruct),
+                        'min_nbrs': str(para.min_nbrs),
+                        'lowest_rmsd_loop': str(para.lowest_rmsd_loop),
+                        'database': str(para.database),
+                        'loop_target_list': str(para.loop_target_list),  
+                        'loop_query_win': str(para.loop_query_win),                      
+                        'min_loop_length': str(para.min_loop_length),
+                        'max_loop_length': str(para.max_loop_length),
+                        'cluster_count_cut': str(para.cluster_count_cut),
+                        'loop_distance_cut': str(para.loop_distance_cut),
+                        }
 
     with open(folderPath + 'parameter.ini', 'w') as configfile:
         config.write(configfile)
@@ -109,10 +128,6 @@ def readConfig(filePath = 'parameter.ini'):
         print('Config file is not existed in the current folder.')
     cfg.read(filePath)
     para = Parameter()
-    para.query_pdb = cfg['Smallprot']['query_pdb'] if cfg['Smallprot']['query_pdb']!='None' else None
-    para.seed_pdb = cfg['Smallprot']['seed_pdb'] if cfg['Smallprot']['seed_pdb']!='None' else None
-    para.exclusion_pdb = cfg['Smallprot']['exclusion_pdb'] if cfg['Smallprot']['exclusion_pdb']!='None' else None
-    para.workdir = cfg['Smallprot']['workdir'] if cfg['Smallprot']['workdir']!='None' else None
     para.num_iter = cfg.getint('Smallprot','num_iter')
     para.max_nc_dist = cfg.getfloat('Smallprot','max_nc_dist')
     para.screen_compactness = cfg.getboolean('Smallprot','screen_compactness')
