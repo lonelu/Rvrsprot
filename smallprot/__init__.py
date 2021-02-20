@@ -1,3 +1,5 @@
+import sys
+sys.path.append(r'/mnt/e/GitHub_Design/Qbits')
 from . import query
 from . import pdbutils
 from . import smallprot

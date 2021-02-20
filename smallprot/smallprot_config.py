@@ -97,7 +97,7 @@ def writeConfig(folderPath = ''):
         config.write(configfile)
 
 
-def writeConfig(folderPath = '', para):
+def writeConfig(filePath, para):
     config = configparser.ConfigParser()
     config['Smallprot'] = {
                         'num_iter': str(para.num_iter),
@@ -118,7 +118,7 @@ def writeConfig(folderPath = '', para):
                         'loop_distance_cut': str(para.loop_distance_cut),
                         }
 
-    with open(folderPath + 'parameter.ini', 'w') as configfile:
+    with open(filePath, 'w') as configfile:
         config.write(configfile)
 
 
@@ -134,7 +134,6 @@ def readConfig(filePath = 'parameter.ini'):
     para.rmsdCut = cfg.getfloat('Smallprot','rmsdCut')
     para.qbits_rmsd = cfg.getfloat('Smallprot','qbits_rmsd')
     para.qbits_window = cfg.getint('Smallprot','qbits_window')
-    para.workdir = cfg['Smallprot']['workdir'] if cfg['Smallprot']['workdir']!='None' else None
     para.min_nbrs = cfg.getint('Smallprot','min_nbrs')
     para.lowest_rmsd_loop = cfg.getboolean('Smallprot','lowest_rmsd_loop')
     para.database = cfg['Smallprot']['database'] if cfg['Smallprot']['database']!='None' else None

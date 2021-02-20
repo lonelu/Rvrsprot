@@ -6,13 +6,14 @@ print('Thanks for using smallprot!')
 
 from smallprot import smallprot 
 
-query_pdb = None
 seed_pdb = '/mnt/e/GitHub_Design/smallprot/data/nina/seed.pdb'
+query_pdb = None
 exclusion_pdb = None
+
 workdir = '/mnt/e/GitHub_Design/smallprot/data/nina/output_test_build1/'
 para = '/mnt/e/GitHub_Design/smallprot/parameter_loop_truc.ini'
 
-hhh = smallprot.SmallProt(query_pdb, seed_pdb, exclusion_pdb, workdir, para)
+hhh = smallprot.SmallProt(seed_pdb, query_pdb, exclusion_pdb,  workdir, para)
 # n_truncations=list(range(20))
 # c_truncations=list(range(10))
 # n_truncations = [16, 17, 18, 19]
@@ -21,4 +22,4 @@ n_truncations = [16]
 c_truncations = [1]
 direction=[2, 1, 0, 3]
 # direction = None
-hhh.loop_seed_single_structure(direction = direction, n_truncations = n_truncations, c_truncations = c_truncations)
+hhh.loop_structure(direction = direction, n_truncations = n_truncations, c_truncations = c_truncations)
