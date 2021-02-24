@@ -10,7 +10,7 @@ seed_pdb = '/mnt/e/GitHub_Design/smallprot/data/ace2_input/query.pdb'
 query_pdb = None
 exclusion_pdb = '/mnt/e/GitHub_Design/smallprot/data/ace2_input/exclusion.pdb'
 
-workdir = '/mnt/e/GitHub_Design/smallprot/data/ace2_input/output_build/'
+workdir = '/mnt/e/GitHub_Design/smallprot/data/ace2_input/output_build_3helix_test/'
 para = '/mnt/e/GitHub_Design/smallprot/parameter_loop_truc.ini'
 
 hhh = smallprot.SmallProt(seed_pdb, query_pdb, exclusion_pdb,  workdir, para)

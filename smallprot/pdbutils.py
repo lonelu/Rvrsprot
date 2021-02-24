@@ -62,6 +62,9 @@ def get_struct(name, pdb_path, min_nbrs=0):
                 chain.detach_child(res_id)
     return struct
 
+def save_struct(struct, out_path):
+    io.set_structure(struct)
+    io.save(out_path, select=NotDisorderedOrH())
 
 def merge_structs(structs, slices=[]):
     """Merge a list of BioPython structs into one.
@@ -144,8 +147,11 @@ def merge_save_struct(out_path, structs, slices=[]):
             res.detach_parent()
             res.id = (' ', init_id + res_id, ' ')
             chain0.add(res)
-    io.set_structure(chain0)
-    io.save(out_path, select=NotDisorderedOrH())
+    #io.set_structure(chain0)
+    #io.save(out_path, select=NotDisorderedOrH())
+    save_struct(chain0, out_path)
+
+
 
 def gen_loop_query_win(pdb_paths, out_path, inds, trunc, loop_query_win = 7, min_nbrs=0):
     structs = [] 
@@ -159,9 +165,10 @@ def gen_loop_query_win(pdb_paths, out_path, inds, trunc, loop_query_win = 7, min
             chain.id = string.ascii_uppercase[25 - counter]
             counter += 1     
         slices.append(slice(int(trunc[ind]), int(trunc[ind]+ loop_query_win)))
-    final_struct = merge_structs(structs, slices)
-    io.set_structure(final_struct)
-    io.save(out_path, select=NotDisorderedOrH())
+    final_struct = merge_structs(structs, slices)   
+    #io.set_structure(final_struct)
+    #io.save(out_path, select=NotDisorderedOrH())
+    save_struct(final_struct, out_path)
 
 def meaure_phipsi(structpath):
     structname = structpath.split('/')[-1]

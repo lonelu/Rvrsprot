@@ -79,10 +79,11 @@ class SmallProt:
         self.log.info("seed_pdb: {}".format(seed_pdb))
         self.log.info("query_pdb: {}".format(query_pdb))
         self.log.info("exclusion_pdb: {}".format(exclusion_pdb))
-        smallprot_config.writeConfig(_workdir + '\parameter.ini', self.para)
+        smallprot_config.writeConfig(_workdir + '/parameter.ini', self.para)
         #--------------------------------       
         self._prepare_pdbs(seed_pdb, query_pdb, exclusion_pdb,  _workdir)
-        self.workdir = _workdir       
+        self.workdir = _workdir  
+        self.loop_workdir = _workdir     
         self.loop_range = [self.para.min_loop_length, self.para.max_loop_length]
         self.targetList = os.path.realpath(self.para.database) + '/pds_list_2p5.txt'
         self.chains_dict = os.path.realpath(self.para.database) + '/db_2p5A_0p3rfree_chains_dictionary.pkl'
@@ -100,7 +101,7 @@ class SmallProt:
         self.combs = []
         #--------------------------------
         self.pre_build_pdbs = []
-        self.full_sses = []
+        self.pre_full_sses = []
 
     def _prepare_pdbs(self, seed_pdb, query_pdb, exclusion_pdb, _workdir):
         # if necessary, split query pdb file into chains
@@ -188,29 +189,14 @@ class SmallProt:
         _full_sse_list = self.full_sse_list.copy()
         for sse in _full_sse_list:
             self.log.info(sse) 
-        self._generate_trunc_loops(self.full_sse_list, sat, self.workdir, direction, n_truncations, c_truncations, self.para.cluster_count_cut, self.loop_range)     
+        self._generate_trunc_loops(self.full_sse_list, sat, self.loop_workdir, direction, n_truncations, c_truncations, self.para.cluster_count_cut, self.loop_range)     
         self.log.info('Finish build protein.')
 
     ### NEW FUNCTIONS FOR GENERATING LOOPS
-    
-    def _cal_win_dist(self, full_sse_list, loop_query_win):
-        qrep_xyz = []
-        qrep_natoms = [0]
-        qrep_nres = []
-        backbone = ['N', 'CA', 'C', 'O']
-        for j, pair_qrep in enumerate(full_sse_list):
-            title = 'struct{}'.format(str(j))
-            this_struct = pdbutils.get_struct(title, pair_qrep, self.para.min_nbrs)
-            atoms = this_struct.get_atoms()
-            qrep_xyz.append(np.array([atom.get_coord() for atom in atoms if atom.get_name() in backbone]))            
-            qrep_nres.append(int(len(qrep_xyz[-1])/4))
-            qrep_natoms.append(qrep_natoms[-1] + len(qrep_xyz[-1]))
 
-        qrep_xyz = np.vstack(qrep_xyz)
-        # compute interatomic distance between SSE pairs
-        dists = cdist(qrep_xyz, qrep_xyz)
-
-        n_reps = len(full_sse_list)
+    def _cal_win_dist(self, full_sse_list, loop_query_win): 
+        n_reps = len(full_sse_list)     
+        qrep_natoms, qrep_nres, dists = peputils.cal_cdist(full_sse_list)
 
         #calcualte distances (with window = 7) between two the first sse and another sse, 
         #store the minimum index.
@@ -376,7 +362,7 @@ class SmallProt:
                 if len(loop_pdbs) > 1:              
                     #Copy centroid pdb
                     _cent_pdb = ''
-                    _cent_pdb_workdir = self.workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])
+                    _cent_pdb_workdir = self.loop_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])
                     if not os.path.exists(_cent_pdb_workdir):
                         os.mkdir(_cent_pdb_workdir)
                     if len(loop_pdbs) >= cluster_count_cut:
@@ -434,7 +420,7 @@ class SmallProt:
                     self.infos[j].redundancy = self.infos[i].trunc_info + " " + self.infos[i].loop_info + " " + str(self.infos[i].loop_len)         
                     redundant_inds.append(j)
 
-        outdir = self.workdir + '/reduced_loops'
+        outdir = self.loop_workdir + '/reduced_loops'
         if not os.path.exists(outdir):
             os.mkdir(outdir)
         for v in reduced_order_infos:
@@ -644,29 +630,70 @@ class SmallProt:
             self._const_protein(queue[0], queue[1], queue[2], queue[3]) 
 
         print('Finish construct sses!')
-        if len(self.full_sses) > 0:
-            pre_build_workdir = self.workdir + '/pre_build_pdbs'
-            if not os.path.exists(pre_build_workdir):
-                os.mkdir(pre_build_workdir)
-            
+        if len(self.pre_build_pdbs) > 0:                      
+            for i in range(len(self.pre_build_pdbs)):
+                loop_build_path = os.path.dirname(self.pre_build_pdbs[i]) + '/' + os.path.splitext(self.pre_build_pdbs[i])[0].split('/')[-1]
+                if not os.path.exists(loop_build_path):
+                    os.mkdir(loop_build_path)
+                self.loop_workdir = loop_build_path
+                self._const_prot_loop(self.pre_build_pdbs[i], self.pre_full_sses[i], loop_build_path)
+            print('Construct sses found.')
         else:
             print('No construct sses found.')
             return
-        for i in range(len(self.full_sses)):
+        
+    def _cut_pdbs(self, full_sse_list, loop_query_win):
+        n_reps = len(full_sse_list)     
+        qrep_natoms, qrep_nres, dists = peputils.cal_cdist(full_sse_list)
 
+        win_dists = np.zeros((n_reps, 2), dtype = int)
+        win_dists[0] = [0, qrep_nres[0]- loop_query_win]
+        for k in range(1, n_reps):
+            for x in range(2):
+                win_dist = [0]* (qrep_nres[k]- loop_query_win + 1)
+                for y in range(qrep_nres[k]- loop_query_win + 1):
+                    for z in range(28):
+                        win_dist[y] += dists[qrep_natoms[0]+win_dists[0][x]*4 + z, qrep_natoms[k]+y*4 + z]
+                win_dists[k, x]=win_dist.index(min(win_dist))
+
+        slices = []
+        for i in range(n_reps):
+            #if i%2 == 0:
+            if win_dists[i][0] < win_dists[i][1]:
+                slices.append(slice(win_dists[i][0], win_dists[i][1] + loop_query_win))
+            else:
+                slices.append(slice(win_dists[i][1], win_dists[i][0] + loop_query_win))
+
+        structs = [pdbutils.get_struct(str(i), full_sse_list[i]) for i in range(n_reps)]
+        struct = pdbutils.merge_structs(structs, slices)
+        return struct
 
     def _const_protein(self, pdb, exclusion_pdb, full_sse_list, recursion_order):
         outdir = os.path.dirname(pdb)
         #Construct final protein.
         if recursion_order == 0:
-            _full_pdb = outdir + '/full.pdb'
+            folders = outdir.split('/')
+            filename = 'full'
+            for i in range(self.para.num_iter, 0, -1):
+                filename += '_' + folders[-i]
+            filename += '.pdb'
+            _full_pdb = outdir + '/' + filename
             pdbutils.merge_pdbs(full_sse_list, _full_pdb, min_nbrs=self.para.min_nbrs)
-            self.pre_build_pdbs.append(_full_pdb)
-            self.full_sses.append(full_sse_list)
+            #struct = self._cut_pdbs(full_sse_list, self.para.loop_query_win)
+            #pdbutils.save_struct(struct, _full_pdb)
+            pre_build_workdir = self.workdir + '/pre_build_pdbs'
+            if not os.path.exists(pre_build_workdir):
+                os.mkdir(pre_build_workdir)
+            _full_pdb_new = pre_build_workdir + '/' + filename
+            shutil.copyfile(_full_pdb, _full_pdb_new)
+
+            self.pre_build_pdbs.append(_full_pdb_new)
+            self.pre_full_sses.append(full_sse_list)
             #self._const_prot_loop(_full_pdb, exclusion_pdb, full_sse_list, outdir)    
             return
         #Generate queries for next recursion.
-        qreps = self._generate_qreps(pdb, exclusion_pdb, recursion_order, outdir)
+        origin_qreps = self._generate_qreps(pdb, exclusion_pdb, recursion_order, outdir)
+        qreps = self._resize_qreps(origin_qreps, full_sse_list, self.para.loop_query_win)
         if qreps == None:
             return
         for i, qrep in enumerate(qreps):
@@ -715,12 +742,15 @@ class SmallProt:
         if not os.path.exists(outdir + '/qbit_reps/'):
             try:
                 # ensure the second SSE is antiparallel to the first
-                query_exists = int(bool(len(self.query_sse_list)))
-                first_recursion = (recursion_order == self.para.num_iter - query_exists)
+                #query_exists = int(bool(len(self.query_sse_list)))
+                #first_recursion = (recursion_order == self.para.num_iter - query_exists)
+
+                first_recursion = (self.para.num_iter == recursion_order)
+                print('first_recursion: ' + str(self.para.num_iter)  +  '-' + str(recursion_order) + str(first_recursion))
                 query.qbits_search(pdb, exclusion_pdb, 
                                    self.chains_dict, outdir, 
                                    self.para.qbits_window, self.para.qbits_rmsd, 
-                                   top=10, sec_struct=self.para.secstruct,
+                                   top=5, sec_struct=self.para.secstruct,
                                    antiparallel=first_recursion,
                                    min_nbrs=self.para.min_nbrs, contiguous=True)
             except:
@@ -730,6 +760,21 @@ class SmallProt:
             qreps = [outdir + '/qbit_reps/' + pdb_path for pdb_path in os.listdir(outdir + '/qbit_reps/')]
         return qreps
 
+    def _resize_qreps(self, qreps, full_sse_list, loop_query_win):
+        resize_qreps = []
+        for qrep in qreps:
+            two_sses = [full_sse_list[0], qrep]
+            struct = self._cut_pdbs(two_sses, loop_query_win)
+            chain = list(struct.get_chains())[-1]     
+            re_qrep_path = os.path.dirname(qrep) + '_resize'
+            if not os.path.exists(re_qrep_path):    
+                os.mkdir(re_qrep_path)
+            re_qrep = re_qrep_path + '/resize_' + os.path.basename(qrep)
+            pdbutils.save_struct(chain, re_qrep)
+            resize_qreps.append(re_qrep)
+        return resize_qreps
+
+
     def _prepare_seed_sses(self, qrep, full_sse_list):
         # if using an external query structure, include it in the Qbits 
         # search until the protein under construction has at least two SSEs
@@ -738,7 +783,14 @@ class SmallProt:
         # else:
         #     all_reps = full_sse_list + [qrep]
 
+
         all_reps = self.query_sse_list + full_sse_list + [qrep]
+        return [all_reps]
+        # print('---------------------------')
+        # print(qrep)
+        # print(all_reps)
+        # print(len(all_reps))
+        # print('---------------------------')
         if len(all_reps) < 3:
             seed_sse_lists = [all_reps]
         else:
@@ -786,11 +838,12 @@ class SmallProt:
         # else:
         #     sat = pdbutils.satisfied_termini(_seed_pdb, self.para.max_nc_dist)
         #     _the_pdb = _seed_pdb
-        # n_sat = np.sum(sat)
-        # if self.para.num_iter - recursion_order - 1 > n_sat:
-        #     # if it is impossible to satisfy all N- or C- termini within 
-        #     # the remaining number of iterations, exit the branch early
-        #     return
+        sat = pdbutils.satisfied_termini(_seed_pdb, self.para.max_nc_dist)
+        n_sat = np.sum(sat)
+        if self.para.num_iter - recursion_order + 1 > n_sat:
+            # if it is impossible to satisfy all N- or C- termini within 
+            # the remaining number of iterations, exit the branch early
+            return
 
         if recursion_order > 0:
             _exclusion_pdb = _workdir + '/exclusion.pdb'
