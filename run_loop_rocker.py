@@ -1,6 +1,8 @@
 ## activate the conda environment. conda activate env_smallprot
 ## please check/change the parameters in 'parameter_loop_truc.ini' 
 ## you can use ipython or just 'python run_rocker.py'
+import sys
+sys.path.append(r'/mnt/e/GitHub_Design/Qbits')
 
 print('Thanks for using smallprot!')
 

@@ -376,11 +376,6 @@ class SmallProt:
                             with open(_cent_pdb, 'wb') as f_out:
                                 shutil.copyfileobj(f_in, f_out)                  
 
-                        # plot._plot_log(loop_workdir + '/seq.txt', l, _cent)    
-                        # plot._plot_hydro(loop_workdir + '/seq.txt', l, _cent, self.para.loop_query_win)                  
-                        # phipsi = pdbutils.meature_phipsi(_cent_pdb)
-                        # plot._plot_phipsi(phipsi, _cent)    
-                        # plot._plot_propensity(loop_workdir + '/seq.txt', l, _cent, self.para.loop_query_win)
                         phi, psi, seq = pdbutils.meature_phipsi(_cent_pdb)
 
                         plot._plot_all(_cent, loop_workdir + '/seq.txt', l, self.para.loop_query_win, phi, psi, seq)
@@ -637,7 +632,7 @@ class SmallProt:
                 query.qbits_search(pdb, exclusion_pdb, 
                                    self.chains_dict, outdir, 
                                    self.para.qbits_window, self.para.qbits_rmsd, 
-                                   top=5, sec_struct=self.para.secstruct,
+                                   self.para.top, sec_struct=self.para.secstruct,
                                    antiparallel=first_recursion,
                                    min_nbrs=self.para.min_nbrs, contiguous=True)
             except:

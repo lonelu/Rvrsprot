@@ -54,8 +54,8 @@ import configparser
 """
 class Parameter:
     def __init__(self):
-        self.num_iter = 3
-        self.max_nc_dist = 15.0
+        self.num_iter = 3  
+        self.top = 5      
         self.screen_compactness = False
         self.rmsdCut = 1.0
         self.qbits_rmsd = 1.5
@@ -63,8 +63,11 @@ class Parameter:
         self.secstruct = None
         self.min_nbrs = 1       
         self.lowest_rmsd_loop = True
+        ###Database
         self.database='/mnt/e/GitHub_Design/Qbits/database'
         self.loop_target_list='/mnt/e/GitHub_Design/master_db/list'   
+        ###For loop searching
+        self.max_nc_dist = 15.0
         self.loop_query_win =7   
         self.min_loop_length = 3
         self.max_loop_length=20
@@ -75,8 +78,8 @@ class Parameter:
 def writeConfig(folderPath = ''):
     config = configparser.ConfigParser()
     config['Smallprot'] = {
-                        'num_iter': '3',
-                        'max_nc_dist': '15',
+                        'num_iter': '3',   
+                        'top': '5',                   
                         'screen_compactness': 'false',
                         'rmsdCut': '1.0',
                         'qbits_rmsd': '1.5',
@@ -86,6 +89,7 @@ def writeConfig(folderPath = ''):
                         'lowest_rmsd_loop': 'true',
                         'database': '/mnt/e/GitHub_Design/Qbits/database',
                         'loop_target_list': '/mnt/e/GitHub_Design/master_db/list',  
+                        'max_nc_dist': '15',
                         'loop_query_win': '7',                      
                         'min_loop_length': '3',
                         'max_loop_length': '20',
@@ -100,8 +104,8 @@ def writeConfig(folderPath = ''):
 def writeConfig(filePath, para):
     config = configparser.ConfigParser()
     config['Smallprot'] = {
-                        'num_iter': str(para.num_iter),
-                        'max_nc_dist': str(para.max_nc_dist),
+                        'num_iter': str(para.num_iter),   
+                        'top':str(para.top),              
                         'screen_compactness': str(para.screen_compactness),
                         'rmsdCut': str(para.rmsdCut),
                         'qbits_rmsd': str(para.qbits_rmsd),
@@ -111,6 +115,7 @@ def writeConfig(filePath, para):
                         'lowest_rmsd_loop': str(para.lowest_rmsd_loop),
                         'database': str(para.database),
                         'loop_target_list': str(para.loop_target_list),  
+                        'max_nc_dist': str(para.max_nc_dist),
                         'loop_query_win': str(para.loop_query_win),                      
                         'min_loop_length': str(para.min_loop_length),
                         'max_loop_length': str(para.max_loop_length),
@@ -128,8 +133,8 @@ def readConfig(filePath = 'parameter.ini'):
         print('Config file is not existed in the current folder.')
     cfg.read(filePath)
     para = Parameter()
-    para.num_iter = cfg.getint('Smallprot','num_iter')
-    para.max_nc_dist = cfg.getfloat('Smallprot','max_nc_dist')
+    para.num_iter = cfg.getint('Smallprot','num_iter')    
+    para.num_iter = cfg.getint('Smallprot','top') 
     para.screen_compactness = cfg.getboolean('Smallprot','screen_compactness')
     para.rmsdCut = cfg.getfloat('Smallprot','rmsdCut')
     para.qbits_rmsd = cfg.getfloat('Smallprot','qbits_rmsd')
@@ -138,6 +143,7 @@ def readConfig(filePath = 'parameter.ini'):
     para.lowest_rmsd_loop = cfg.getboolean('Smallprot','lowest_rmsd_loop')
     para.database = cfg['Smallprot']['database'] if cfg['Smallprot']['database']!='None' else None
     para.loop_target_list = cfg['Smallprot']['loop_target_list'] if cfg['Smallprot']['loop_target_list']!='None' else None 
+    para.max_nc_dist = cfg.getfloat('Smallprot','max_nc_dist')
     para.loop_query_win = cfg.getint('Smallprot', 'loop_query_win')  
     para.min_loop_length = cfg.getint('Smallprot','min_loop_length')
     para.max_loop_length = cfg.getint('Smallprot','max_loop_length')
