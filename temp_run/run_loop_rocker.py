@@ -3,6 +3,7 @@
 ## you can use ipython or just 'python run_rocker.py'
 import sys
 sys.path.append(r'/mnt/e/GitHub_Design/Qbits')
+sys.path.append(r'/mnt/e/GitHub_Design/smallprot')
 
 print('Thanks for using smallprot!')
 
