@@ -10,8 +10,10 @@ from scipy.linalg import toeplitz
 from scipy.spatial import Delaunay
 from scipy.spatial.distance import cdist
 from Bio.PDB import PDBParser, PDBIO, Select, Polypeptide
+import prody
 from qbits import convex_hull, pdb, clash
 from itertools import combinations
+
 
 parser = PDBParser(QUIET=True)
 io = PDBIO()
@@ -170,23 +172,41 @@ def gen_loop_query_win(pdb_paths, out_path, inds, trunc, loop_query_win = 7, min
     #io.save(out_path, select=NotDisorderedOrH())
     save_struct(final_struct, out_path)
 
-def meaure_phipsi(structpath):
-    structname = structpath.split('/')[-1]
-    struct = parser.get_structure(structname, structpath)
-    pp = ppb.build_peptides(struct)[0]
-    phipsi = pp.get_phi_psi_list()
-    phipsi_180 = []
-    for hs in phipsi:
-        if hs[0] == None:
-            phipsi_180.append(0)  
-        else:
-            phipsi_180.append(hs[0]/3.14159265*180)
+def meature_phipsi(structpath):
+    protein = prody.parsePDB(structpath)
+    seq = []
+    phi_180 = []
+    psi_180 = []
+    for p in protein.iterResidues():
+        seq.append(p.getResname())
+        try:
+            phi_180.append(prody.calcPhi(p))
+        except:
+            phi_180.append(None)
+        try:
+            psi_180.append(prody.calcPsi(p))
+        except:
+            psi_180.append(None)
+    return phi_180, psi_180, seq
 
-        if hs[1] == None:
-            phipsi_180.append(0)
-        else:  
-            phipsi_180.append(hs[1]/3.14159265*180)
-    return phipsi_180
+    # print(structpath)
+    # structname = structpath.split('/')[-1]
+    # struct = parser.get_structure(structname, structpath)
+    # pp = ppb.build_peptides(struct)[0] #there is a 'bug' here, it cannot read the whole chain sometimes.
+    # print(pp.get_sequence())
+    # phipsi = pp.get_phi_psi_list()
+    # phipsi_180 = []
+    # for hs in phipsi:
+    #     if hs[0] == None:
+    #         phipsi_180.append(0)  
+    #     else:
+    #         phipsi_180.append(hs[0]/3.14159265*180)
+
+    #     if hs[1] == None:
+    #         phipsi_180.append(0)
+    #     else:  
+    #         phipsi_180.append(hs[1]/3.14159265*180)
+    # return phipsi_180
 
 
 def merge_pdbs(pdb_paths, out_path, min_nbrs=0, set_bfac=None):

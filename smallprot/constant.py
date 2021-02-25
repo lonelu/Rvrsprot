@@ -1,3 +1,7 @@
+import qbits
+import numpy as np
+import os
+from pathlib import Path
 
 # hydrophobicity from https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/midas/hydrophob.html
 
@@ -54,3 +58,32 @@ propensity_dict = {'LYS': [0.615, 0, 0, 0, 0],
           'MSE': [0.444, 0, 0, 0, 0],
           'HSE': [0.802, 0, 0, 0, 0],
           }
+
+def read_apble(filepath):
+    apble_dict ={}
+    with open(filepath) as file_in:
+        lines = file_in.readlines()
+        count = -1
+        table = []
+        key = ''
+        for line in lines:
+            if line.split('\t')[0] in qbits.constants.resnames_aa_20:
+                key = line.split('\t')[0]
+                count = 0
+                continue
+            if count >= 0 and count <= 35:
+                count += 1
+                table.append([s for s in line.split('\t')[0:36]])
+                if count == 35:
+                    apble_dict[key] = np.array(table, dtype = object) 
+            else:
+                table = []
+                key = ''
+                count = -1
+    return apble_dict
+
+
+
+APBEL_DICT = read_apble(Path(__file__).parent.parent / 'database/APBLE.txt')
+            
+                

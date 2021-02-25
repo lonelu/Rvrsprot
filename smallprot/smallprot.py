@@ -19,7 +19,7 @@ from itertools import product, permutations
 
 import qbits
 
-from smallprot import pdbutils, query, cluster_loops, smallprot_config, logger, peputils, constant
+from smallprot import pdbutils, query, cluster_loops, smallprot_config, logger, peputils, constant, plot
 
 @dataclass
 class Struct_info:
@@ -374,14 +374,17 @@ class SmallProt:
                         in_pdb = [subdir + '/' + lpdb for lpdb in loop_pdbs if 'centroid' in lpdb][0]
                         with gzip.open(in_pdb, 'rb') as f_in:
                             with open(_cent_pdb, 'wb') as f_out:
-                                shutil.copyfileobj(f_in, f_out)  
-                    
-                        self._plot_log(loop_workdir + '/seq.txt', l, _cent)    
-                        self._plot_hydro(loop_workdir + '/seq.txt', l, _cent, self.para.loop_query_win)                  
-                        phipsi = pdbutils.meaure_phipsi(_cent_pdb)
-                        self._plot_phipsi(phipsi, _cent)    
-                        self._plot_propensity(loop_workdir + '/seq.txt', l, _cent, self.para.loop_query_win)
-                        
+                                shutil.copyfileobj(f_in, f_out)                  
+
+                        # plot._plot_log(loop_workdir + '/seq.txt', l, _cent)    
+                        # plot._plot_hydro(loop_workdir + '/seq.txt', l, _cent, self.para.loop_query_win)                  
+                        # phipsi = pdbutils.meature_phipsi(_cent_pdb)
+                        # plot._plot_phipsi(phipsi, _cent)    
+                        # plot._plot_propensity(loop_workdir + '/seq.txt', l, _cent, self.para.loop_query_win)
+                        phi, psi, seq = pdbutils.meature_phipsi(_cent_pdb)
+
+                        plot._plot_all(_cent, loop_workdir + '/seq.txt', l, self.para.loop_query_win, phi, psi, seq)
+
                     #Add summary
                     info = Struct_info(trunc_info = loop_workdir.split('/')[-2], loop_info = loop_workdir.split('/')[-1], 
                             loop_len = l, clust_num = len(loop_pdbs), cent_pdb = _cent_pdb)              
@@ -504,122 +507,6 @@ class SmallProt:
                 f.write(r.trunc_info + '\t' + r.loop_info + '\t' + str(r.loop_len) + '\t'
                     + str(r.clust_num) + '\t' + r.cent_pdb + '\t'+ r.redundancy+ '\t' + str(r.clust_num_2nd) + '\n')       
     
-    def _plot_log(self, seqfile, seqlen, filepath):
-        with open(seqfile, 'r') as f:
-            lines = f.read().split('\n')
-        all_seqs = []
-        for line in lines:
-            if len(line) > 0:
-                seq = ''
-                for res in line.split(' '):
-                    if len(res) == 3 and res[0].isalpha():
-                        seq += qbits.constants.one_letter_code[res]
-                    elif len(res) == 4 and res[0] == '[':
-                        seq += qbits.constants.one_letter_code[res[1:]]
-                    elif len(res) == 4 and res[-1] == ']':
-                        seq += qbits.constants.one_letter_code[res[:-1]]
-                all_seqs.append(seq)
-        seqs = []
-        for s in all_seqs:
-            if len(s) == 14 + seqlen:            
-                seqs.append(s)
-
-        df = logomaker.alignment_to_matrix(sequences=seqs, to_type='counts',
-                                               characters_to_ignore='-', pseudocount=0.01)
-        logo = logomaker.Logo(df,
-                         font_name='Arial',
-                         color_scheme='NajafabadiEtAl2017',
-                         vpad=.1,
-                         width=.8)
-        logo.style_xticks(anchor=0, spacing=1)      
-        logo.ax.set_ylabel('Count')
-        logo.ax.set_xlim([-1, len(df)])
-        #logo.fig.savefig(filepath) 
-        plt.savefig(filepath + '_logo.png')
-        plt.close()
-
-    def _plot_hydro(self, seqfile, seqlen, filepath, loop_query_win):
-        with open(seqfile, 'r') as f:
-            lines = f.read().split('\n')
-        all_hydro = []
-        for line in lines:
-            if len(line) > 0:
-                hydro = []
-                for res in line.split(' '):
-                    if len(res) == 3 and res[0].isalpha():
-                        hydro.append(constant.hydro_dict[res]) 
-                    elif len(res) == 4 and res[0] == '[':
-                        hydro.append(constant.hydro_dict[res[1:]])
-                    elif len(res) == 4 and res[-1] == ']':
-                        hydro.append(constant.hydro_dict[res[:-1]])
-                if len(hydro) == seqlen + 2*loop_query_win:
-                    all_hydro.append(hydro)
-        all_hydro_arr = np.array(all_hydro)
-
-        means = np.mean(all_hydro_arr, 0)
-        sds = np.std(all_hydro_arr, 0)
-
-        x = list(range(1, seqlen + 2*loop_query_win+1))
-        for i in range(len(constant.hydro_scale)):
-            fig = plt.figure(figsize=(10, 8))
-            ax = fig.add_subplot(111)            
-            ax.set_xlabel('AA', fontsize = 18)
-            ax.set_ylabel(constant.hydro_scale[i], fontsize = 18)
-            #for i in range(len(constant.hydro_scale)):
-            #    ax.errorbar(x, means[:, i], yerr = sds[:, i], label = constant.hydro_scale[i])
-            ax.errorbar(x, means[:, i], yerr = sds[:, i])
-            plt.savefig(filepath+'_hydro_'+str(i)+'.png')
-            plt.close()
-
-    def _plot_propensity(self, seqfile, seqlen, filepath, loop_query_win):
-        with open(seqfile, 'r') as f:
-            lines = f.read().split('\n')
-        all_propen = []
-        for line in lines:
-            if len(line) > 0:
-                propen = []
-                for res in line.split(' '):
-                    if len(res) == 3 and res[0].isalpha():
-                        propen.append(constant.propensity_dict[res]) 
-                    elif len(res) == 4 and res[0] == '[':
-                        propen.append(constant.propensity_dict[res[1:]])
-                    elif len(res) == 4 and res[-1] == ']':
-                        propen.append(constant.propensity_dict[res[:-1]])
-                if len(propen) == seqlen + 2*loop_query_win:
-                    all_propen.append(propen)
-        all_propen_arr = np.array(all_propen)
-        means = np.mean(all_propen_arr, 0)
-        sds = np.std(all_propen_arr, 0)
-
-        x = list(range(1, seqlen + 2*loop_query_win+1))
-        #for i in range(len(constant.propensity_scale)):
-        fig = plt.figure(figsize=(10, 8))
-        ax = fig.add_subplot(111)            
-        ax.set_xlabel('AA', fontsize = 18)
-        ax.set_ylabel(constant.propensity_scale[0], fontsize = 18)
-
-        ax.errorbar(x, means[:, 0], yerr = sds[:, 0])
-        plt.savefig(filepath+'_helix_propen.png')
-        plt.close()
-
-    def _plot_phipsi(self, phipsi, filepath):
-        x = list(range(1, int(len(phipsi)/2+1)))
-        plt.plot(x, phipsi[::2], label = 'phi')
-        plt.plot(x, phipsi[1::2], label = 'psi')
-        plt.legend()
-        plt.savefig(filepath + '_phipsi.png')
-        plt.close()
-
-        plt.plot(phipsi[2:-2:2], phipsi[3:-1:2], 's', color='red', markersize=5, markerfacecolor='white')
-        plt.xlim(-180, 180)
-        plt.ylim(-180, 180)
-        xticks = [-180, -135, -90, -45, 0, 45, 90, 135, 180]
-        yticks = [-180, -135, -90, -45, 0, 45, 90, 135, 180]
-        plt.xticks(xticks)
-        plt.yticks(yticks)
-        plt.savefig(filepath + '_ramachandran.png')
-        plt.close()
-  
     ### FUNCTIONS FOR GENERATING SSEs
 
     def _generate_proteins(self):     

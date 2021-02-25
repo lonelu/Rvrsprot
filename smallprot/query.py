@@ -171,7 +171,7 @@ def qbits_search(query_pdb_path, query_full_pdb_path, chains_dict_path,
     # parse MASTER matches
     p = qbits.parse.Parse(query_full_pdb_path, query_pdb_path, match_path, 
                           seq_path)
-    p.parse(outdir=outdir, show_parsing_progress=False)
+    p.parse(outdir=outdir + '/', show_parsing_progress=False)
     # search through matches for neighbors
     qs = qbits.search.Qsearch(window_size=window_size, rmsd=rmsd, 
                               min_nbrs=min_nbrs)
