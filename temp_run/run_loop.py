@@ -13,8 +13,8 @@ seed_pdb = '/mnt/e/GitHub_Design/smallprot/data/nina/seed.pdb'
 query_pdb = None
 exclusion_pdb = None
 
-workdir = '/mnt/e/GitHub_Design/smallprot/data/nina/output_test_build1/'
-para = '/mnt/e/GitHub_Design/smallprot/parameter_loop_truc.ini'
+workdir = '/mnt/e/GitHub_Design/smallprot/data/nina/output_test_build2/'
+para = '/mnt/e/GitHub_Design/smallprot/temp_run/parameter_loop_truc.ini'
 
 hhh = smallprot.SmallProt(seed_pdb, query_pdb, exclusion_pdb,  workdir, para)
 # n_truncations=list(range(20))

@@ -412,7 +412,6 @@ class SmallProt:
                     min_dist, min_dist_ind = peputils.cal_sse_dist([self.infos[i].cent_pdb, self.infos[j].cent_pdb])
                 else:
                     min_dist, min_dist_ind = peputils.cal_sse_dist([self.infos[j].cent_pdb, self.infos[i].cent_pdb])               
-                self.log.info(str(min_dist))
                 if min_dist < self.para.rmsdCut: 
                 #if min_dist < 100:        
                     self.infos[j].redundancy = self.infos[i].trunc_info + " " + self.infos[i].loop_info + " " + str(self.infos[i].loop_len)         
@@ -619,7 +618,7 @@ class SmallProt:
         outfile = outdir + '/stdout'
         print('Querying MASTER')
         query.master_query(pdb, self.targetList, self.para.rmsdCut, 
-            topN=None, outfile=outfile, clobber=False)
+            topN=1000, outfile=outfile, clobber=False)
         print('Searching with Qbits')
         if not os.path.exists(outdir + '/qbit_reps/'):
             try:
