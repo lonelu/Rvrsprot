@@ -56,6 +56,7 @@ class Parameter:
     def __init__(self):
         self.num_iter = 3  
         self.top = 5      
+        self.master_query_top = 200
         self.screen_compactness = False
         self.rmsdCut = 1.0
         self.qbits_rmsd = 1.5
@@ -66,7 +67,8 @@ class Parameter:
         ###Database
         self.database='/mnt/e/GitHub_Design/Qbits/database'
         self.loop_target_list='/mnt/e/GitHub_Design/master_db/list'   
-        ###For loop searching
+        ###For loop searching     
+        self.master_query_loop_top = 200
         self.max_nc_dist = 15.0
         self.loop_query_win =7   
         self.min_loop_length = 3
@@ -79,7 +81,8 @@ def writeConfig(folderPath = ''):
     config = configparser.ConfigParser()
     config['Smallprot'] = {
                         'num_iter': '3',   
-                        'top': '5',                   
+                        'top': '5', 
+                        'master_query_top': 'master_query_top',                  
                         'screen_compactness': 'false',
                         'rmsdCut': '1.0',
                         'qbits_rmsd': '1.5',
@@ -89,6 +92,7 @@ def writeConfig(folderPath = ''):
                         'lowest_rmsd_loop': 'true',
                         'database': '/mnt/e/GitHub_Design/Qbits/database',
                         'loop_target_list': '/mnt/e/GitHub_Design/master_db/list',  
+                        'master_query_loop_top': 'master_query_loop_top',
                         'max_nc_dist': '15',
                         'loop_query_win': '7',                      
                         'min_loop_length': '3',
@@ -105,7 +109,8 @@ def writeConfig(filePath, para):
     config = configparser.ConfigParser()
     config['Smallprot'] = {
                         'num_iter': str(para.num_iter),   
-                        'top':str(para.top),              
+                        'top':str(para.top),
+                        'master_query_top':str(para.master_query_top),              
                         'screen_compactness': str(para.screen_compactness),
                         'rmsdCut': str(para.rmsdCut),
                         'qbits_rmsd': str(para.qbits_rmsd),
@@ -114,7 +119,8 @@ def writeConfig(filePath, para):
                         'min_nbrs': str(para.min_nbrs),
                         'lowest_rmsd_loop': str(para.lowest_rmsd_loop),
                         'database': str(para.database),
-                        'loop_target_list': str(para.loop_target_list),  
+                        'loop_target_list': str(para.loop_target_list), 
+                        'master_query_top':str(para.master_query_loop_top), 
                         'max_nc_dist': str(para.max_nc_dist),
                         'loop_query_win': str(para.loop_query_win),                      
                         'min_loop_length': str(para.min_loop_length),
@@ -135,6 +141,7 @@ def readConfig(filePath = 'parameter.ini'):
     para = Parameter()
     para.num_iter = cfg.getint('Smallprot','num_iter')    
     para.num_iter = cfg.getint('Smallprot','top') 
+    para.master_query_top = cfg.getint('Smallprot', 'master_query_top')
     para.screen_compactness = cfg.getboolean('Smallprot','screen_compactness')
     para.rmsdCut = cfg.getfloat('Smallprot','rmsdCut')
     para.qbits_rmsd = cfg.getfloat('Smallprot','qbits_rmsd')
@@ -143,6 +150,7 @@ def readConfig(filePath = 'parameter.ini'):
     para.lowest_rmsd_loop = cfg.getboolean('Smallprot','lowest_rmsd_loop')
     para.database = cfg['Smallprot']['database'] if cfg['Smallprot']['database']!='None' else None
     para.loop_target_list = cfg['Smallprot']['loop_target_list'] if cfg['Smallprot']['loop_target_list']!='None' else None 
+    para.master_query_loop_top = cfg.getint('Smallprot', 'master_query_loop_top')
     para.max_nc_dist = cfg.getfloat('Smallprot','max_nc_dist')
     para.loop_query_win = cfg.getint('Smallprot', 'loop_query_win')  
     para.min_loop_length = cfg.getint('Smallprot','min_loop_length')

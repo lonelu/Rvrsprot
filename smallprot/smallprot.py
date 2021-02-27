@@ -312,7 +312,7 @@ class SmallProt:
             clusters_exist = self._loop_search_query_search(loop_workdir, loop_query, loop_outfile, loop_range)
             # cluster loops if the clusters do not already exist
             if not clusters_exist:
-                cluster_loops.run_cluster(loop_workdir + '/', outfile=loop_outfile)
+                cluster_loops.run_cluster(loop_workdir + '/', self.log, outfile=loop_outfile)
 
     def _loop_search_query_search(self, loop_workdir, loop_query, loop_outfile, loop_range):
         """find loops with MASTER"""
@@ -321,7 +321,7 @@ class SmallProt:
             print('Querying MASTER for loops of length {} to {}.'.format(
                     str(loop_range[0]), str(loop_range[1])))
             query.master_query_loop(loop_query, self.para.loop_target_list, 
-                                    rmsdCut=self.para.rmsdCut, topN=200,
+                                    rmsdCut=self.para.rmsdCut, topN=self.para.para.master_query_loop_top,
                                     gapLen=gapLen, outdir=loop_workdir, 
                                     outfile=loop_outfile)
         clusters_exist = True
@@ -618,7 +618,7 @@ class SmallProt:
         outfile = outdir + '/stdout'
         print('Querying MASTER')
         query.master_query(pdb, self.targetList, self.para.rmsdCut, 
-            topN=1000, outfile=outfile, clobber=False)
+            topN=self.para.master_query_top, outfile=outfile, clobber=False)
         print('Searching with Qbits')
         if not os.path.exists(outdir + '/qbit_reps/'):
             try:

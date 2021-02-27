@@ -243,7 +243,7 @@ def listdir_mac(path):
 ##########
 ##########
 
-def run_cluster(path, outfile=None):
+def run_cluster(path, log, outfile=None):
     if outfile:
         orig_out = sys.stdout
         sys.stdout = open(outfile, 'a')
@@ -270,6 +270,10 @@ def run_cluster(path, outfile=None):
             clu.run_protocol(pdbs)
         except:
             # make empty clusters directory if clustering fails
-            os.mkdir(path + loopdir + '/clusters/')
+            if not os.path.exists(path + loopdir + '/clusters/'):
+                os.mkdir(path + loopdir + '/clusters/')
+            else:
+                log.info('loop run_cluster error.')
+                log.info('The path: (' + path + loopdir + '/clusters/' +  ') already exist.')
     if outfile:
         sys.stdout = orig_out
