@@ -61,11 +61,7 @@ class SmallProt:
         constructor as its seed_pdb argument.
     """
 
-    def __init__(self, seed_pdb, query_pdb, exclusion_pdb,  workdir, para_file_path = 'parameter.ini'):
-        if os.path.exists(para_file_path):
-            self.para = smallprot_config.readConfig(para_file_path)
-        else:
-            self.para = smallprot_config.Parameter()
+    def __init__(self, seed_pdb, query_pdb, exclusion_pdb,  workdir, para):
         if workdir:
             _workdir = os.path.realpath(workdir)
             if not os.path.exists(_workdir):
@@ -73,6 +69,7 @@ class SmallProt:
         else:
             _workdir = os.getcwd() + '/output_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')          
             os.mkdir(_workdir)
+        self.para = para
         #--------------------------------
         self.log = logger.logger_config(log_path=_workdir + '/log.txt', logging_name='smallprot')
         self.log.info("Creat Smallprot object.")      

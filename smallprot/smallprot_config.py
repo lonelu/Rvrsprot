@@ -53,28 +53,31 @@ import configparser
         be used in MASTER queries for loops.
 """
 class Parameter:
-    def __init__(self):
-        self.num_iter = 3  
-        self.top = 5      
-        self.master_query_top = 200
-        self.screen_compactness = False
-        self.rmsdCut = 1.0
-        self.qbits_rmsd = 1.5
-        self.qbits_window = 10
-        self.secstruct = None
-        self.min_nbrs = 1       
-        self.lowest_rmsd_loop = True
+    def __init__(self, num_iter = 3, top = 5, master_query_top = 200, screen_compactness = False, rmsdCut = 1.0, 
+    qbits_rmsd = 1.5, qbits_window = 10, secstruct = None, min_nbrs = 1, lowest_rmsd_loop = True, 
+    database='/mnt/e/GitHub_Design/Qbits/database', loop_target_list='/mnt/e/GitHub_Design/master_db/list', 
+    master_query_loop_top = 200, max_nc_dist = 15.0, loop_query_win =7, min_loop_length = 3, max_loop_length=20, cluster_count_cut=20, loop_distance_cut=15):
+        self.num_iter = num_iter  
+        self.top = top      
+        self.master_query_top = master_query_top
+        self.screen_compactness = screen_compactness
+        self.rmsdCut = rmsdCut
+        self.qbits_rmsd = qbits_rmsd
+        self.qbits_window = qbits_window
+        self.secstruct = secstruct
+        self.min_nbrs = min_nbrs       
+        self.lowest_rmsd_loop = lowest_rmsd_loop
         ###Database
-        self.database='/mnt/e/GitHub_Design/Qbits/database'
-        self.loop_target_list='/mnt/e/GitHub_Design/master_db/list'   
+        self.database=database
+        self.loop_target_list=loop_target_list   
         ###For loop searching     
-        self.master_query_loop_top = 200
-        self.max_nc_dist = 15.0
-        self.loop_query_win =7   
-        self.min_loop_length = 3
-        self.max_loop_length=20
-        self.cluster_count_cut=20
-        self.loop_distance_cut=15
+        self.master_query_loop_top = master_query_loop_top
+        self.max_nc_dist = max_nc_dist
+        self.loop_query_win =loop_query_win  
+        self.min_loop_length = min_loop_length
+        self.max_loop_length=max_loop_length
+        self.cluster_count_cut=cluster_count_cut
+        self.loop_distance_cut=loop_distance_cut
 #Write and Read Parameters used for Smallprot
 
 def writeConfig(folderPath = ''):
