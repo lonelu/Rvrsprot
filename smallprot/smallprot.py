@@ -321,7 +321,7 @@ class SmallProt:
             print('Querying MASTER for loops of length {} to {}.'.format(
                     str(loop_range[0]), str(loop_range[1])))
             query.master_query_loop(loop_query, self.para.loop_target_list, 
-                                    rmsdCut=self.para.rmsdCut, topN=self.para.para.master_query_loop_top,
+                                    rmsdCut=self.para.rmsdCut, topN=self.para.master_query_loop_top,
                                     gapLen=gapLen, outdir=loop_workdir, 
                                     outfile=loop_outfile)
         clusters_exist = True
