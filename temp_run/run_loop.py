@@ -49,5 +49,5 @@ hhh = smallprot.SmallProt(seed_pdb, query_pdb, exclusion_pdb,  workdir, para)
 n_truncations = [16]
 c_truncations = [1]
 direction=[2, 1, 0, 3]
-# direction = None
+# direction = []
 hhh.loop_structure(direction = direction, n_truncations = n_truncations, c_truncations = c_truncations)
