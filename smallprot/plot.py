@@ -139,8 +139,8 @@ def _plot_phipsi(phi, psi, seqlen, filepath):
 def _plot_table(seq, phi, psi, filepath):
     data = []
     data.append([qbits.constants.one_letter_code[s] for s in seq])
-    data.append([round(f, 1) for f in phi if f])
-    data.append([round(f, 1) for f in psi if f])
+    data.append([round(f, 1) if f else None for f in phi])
+    data.append([round(f, 1) if f else None for f in psi])
     character = []
     for i in range(len(seq)):
         s = seq[i]
