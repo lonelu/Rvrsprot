@@ -10,14 +10,14 @@ print('Thanks for using smallprot!')
 from smallprot import smallprot, smallprot_config
 
 para = smallprot_config.Parameter(
-        num_iter = 1, 
-        top = 50,      
-        master_query_top = 1000,
+        num_iter = 2, 
+        top = 20,      
+        master_query_top = 500,
         screen_compactness = False,
         rmsdCut = 1.0,
         qbits_rmsd = 1.5,
         qbits_window = 10,
-        secstruct = 'H',
+        secstruct = None,
         min_nbrs = 1,     
         lowest_rmsd_loop = True,
         ###Database
@@ -33,12 +33,11 @@ para = smallprot_config.Parameter(
         loop_distance_cut=15
 )
 
-
-seed_pdb = '/mnt/e/DesignData/lhl/seed.pdb'
+seed_pdb = '/mnt/e/DesignData/trihelix/seed2.pdb'
 query_pdb = None
-exclusion_pdb = '/mnt/e/DesignData/lhl/exclude.pdb'
+exclusion_pdb = None
 
-workdir = '/mnt/e/DesignData/lhl/output_top100/'
+workdir = '/mnt/e/DesignData/trihelix/output_top20'
 
 hhh = smallprot.SmallProt(seed_pdb, query_pdb, exclusion_pdb,  workdir, para)
 #n_truncations=list(range(5))

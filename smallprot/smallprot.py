@@ -509,18 +509,21 @@ class SmallProt:
 
         print('Finish construct sses!')
         if len(self.pre_build_pdbs) > 0:                      
-            for i in range(len(self.pre_build_pdbs)):
-                loop_build_path = os.path.dirname(self.pre_build_pdbs[i]) + '/' + os.path.splitext(self.pre_build_pdbs[i])[0].split('/')[-1]
-                if not os.path.exists(loop_build_path):
-                    os.mkdir(loop_build_path)
-                self.loop_workdir = loop_build_path
-                self._const_prot_loop(self.pre_build_pdbs[i], self.pre_full_sses[i], loop_build_path)
+            # for i in range(len(self.pre_build_pdbs)):
+            #     loop_build_path = os.path.dirname(self.pre_build_pdbs[i]) + '/' + os.path.splitext(self.pre_build_pdbs[i])[0].split('/')[-1]
+            #     if not os.path.exists(loop_build_path):
+            #         os.mkdir(loop_build_path)
+            #     self.loop_workdir = loop_build_path
+            #     self._const_prot_loop(self.pre_build_pdbs[i], self.pre_full_sses[i], loop_build_path)
             print('Construct sses found.')
         else:
             print('No construct sses found.')
             return
         
     def _cut_pdbs(self, full_sse_list, loop_query_win):
+        print('cut pdb')
+        print(full_sse_list[0])
+        print(full_sse_list[1])
         n_reps = len(full_sse_list)     
         qrep_natoms, qrep_nres, dists = peputils.cal_cdist(full_sse_list)
 
@@ -570,10 +573,11 @@ class SmallProt:
             #self._const_prot_loop(_full_pdb, exclusion_pdb, full_sse_list, outdir)    
             return
         #Generate queries for next recursion.
-        origin_qreps = self._generate_qreps(pdb, exclusion_pdb, recursion_order, outdir)
-        qreps = self._resize_qreps(origin_qreps, full_sse_list, self.para.loop_query_win)
+        qreps = self._generate_qreps(pdb, exclusion_pdb, recursion_order, outdir)
         if qreps == None:
             return
+        if False:
+            qreps = self._resize_qreps(qreps, full_sse_list, self.para.loop_query_win)
         for i, qrep in enumerate(qreps):
             seed_sse_lists = self._prepare_seed_sses(qrep, full_sse_list)
             for j, seed_sse_list in enumerate(seed_sse_lists):
@@ -642,14 +646,19 @@ class SmallProt:
         resize_qreps = []
         for qrep in qreps:
             two_sses = [full_sse_list[0], qrep]
-            struct = self._cut_pdbs(two_sses, loop_query_win)
-            chain = list(struct.get_chains())[-1]     
-            re_qrep_path = os.path.dirname(qrep) + '_resize'
-            if not os.path.exists(re_qrep_path):    
-                os.mkdir(re_qrep_path)
-            re_qrep = re_qrep_path + '/resize_' + os.path.basename(qrep)
-            pdbutils.save_struct(chain, re_qrep)
-            resize_qreps.append(re_qrep)
+            try:
+                struct = self._cut_pdbs(two_sses, loop_query_win)
+                chain = list(struct.get_chains())[-1]     
+                re_qrep_path = os.path.dirname(qrep) + '_resize'
+                if not os.path.exists(re_qrep_path):    
+                    os.mkdir(re_qrep_path)
+                re_qrep = re_qrep_path + '/resize_' + os.path.basename(qrep)
+                pdbutils.save_struct(chain, re_qrep)
+                resize_qreps.append(re_qrep)
+            except:
+                #There is a bug here in the self.cut_pdbs. Try prody???
+                print('resize crash!')
+                resize_qreps.append(qrep)
         return resize_qreps
 
 
