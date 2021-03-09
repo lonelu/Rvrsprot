@@ -154,7 +154,7 @@ def _plot_table(fig, ax, seq, phi, psi, filepath):
 
 
 def _plot_all(filepath, seqfile, seqlen, loop_query_win, phi, psi, seq):
-    fig, (ax1, ax2, ax3, ax4) =plt.subplots(4, 1, figsize=(10, 14))
+    fig, (ax1, ax2, ax3, ax4) =plt.subplots(4, 1, figsize=(15, 14))
     _plot_phipsi(fig, ax1, phi, psi, seqlen, filepath)
     _plot_table(fig, ax2, seq, phi, psi, filepath)
     _plot_log(fig, ax3, seqfile, seqlen, filepath)

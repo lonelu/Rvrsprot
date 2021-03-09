@@ -30,7 +30,8 @@ para = smallprot_config.Parameter(
         min_loop_length = 3,
         max_loop_length=20,
         cluster_count_cut=20,
-        loop_distance_cut=15
+        loop_distance_cut=15,
+        construct_keep = 0
 )
 
 

@@ -87,6 +87,7 @@ class SmallProt:
         #--------------------------------   
         self.n_truncations = []
         self.c_truncations = []
+        self.sat = None
         self.looped_pdbs = []
         #self.output_pdbs = []
 
@@ -168,9 +169,7 @@ class SmallProt:
             raise AssertionError('seed_pdb not provided to constructor.')
         # compute the number of satisfied N- and C-termini
         all_sat = pdbutils.satisfied_termini(self.seed_pdb, self.para.max_nc_dist)
-        print(all_sat)
         sat = np.zeros_like(all_sat)
-        print(len(direction))
         if len(direction)!=0:          
             for i in range(len(direction)-1):
                 j = i+1
@@ -179,6 +178,7 @@ class SmallProt:
         else:
             sat = all_sat.copy()
         print(sat)
+        self.sat = sat
         # set n_truncations and c_truncations for loop generation
         self.n_truncations = n_truncations
         self.c_truncations = c_truncations
@@ -261,31 +261,39 @@ class SmallProt:
 
         #Remove redundency. Some loops share the same structure. 
         reduced_order_infos = self._remove_redundancy(cluster_count_cut)
-
+        
         #Write struct info
-        self._write_file(workdir + '/summary.txt', self.infos) 
+        self._write_summary_file(workdir + '/summary.txt', self.infos) 
 
+        self.write_looped_pdb(the_full_sse_list, reduced_order_infos, n_chains, sat, cluster_count_cut)
+
+    def write_looped_pdb(self, the_full_sse_list, reduced_order_infos, n_chains, sat, cluster_count_cut, output_cut = 100):
         #Find loop combine candidates.
         combs, ps, scores = self._extract_top_hit(reduced_order_infos, n_chains, sat, cluster_count_cut)
         self.combs.extend(combs)
 
-        # #Build whole structure.
-        outdir = workdir + '/output'
-        if not os.path.exists(outdir):
-            os.mkdir(outdir)
-        
-        output_cut = 100 if len(combs) > 100 else len(combs)
+        output_cut = output_cut if len(combs) > output_cut else len(combs)
         inds = np.argsort(scores)[::-1][:output_cut]
-        for i in inds:
-            comb = combs[i]
-            p = ps[i]
+        for rank in range(len(inds)):
+            ind = inds[rank]
+            comb = combs[ind]
+            p = ps[ind]
             centroids = [c.cent_pdb for c in comb]
             clashing = pdbutils.check_clashes(centroids)
             if clashing:
                 continue
-            structs, slices = self._connect_loops_struct(the_full_sse_list, n_chains, p, centroids)
-            out_path = outdir + '/output_' + '-'.join(str(v) for v in p) + '_' + str(i) + '.pdb'
-            pdbutils.merge_save_struct(out_path, structs, slices)      
+
+            outdir = self.loop_workdir + '/loop_' + '-'.join([str(s) for s in p]) 
+            if not os.path.exists(outdir):
+                os.mkdir(outdir)
+            for c in centroids:
+                dst_dir = outdir + '/' + c.split('/')[-1]
+                shutil.copy(c, dst_dir)
+                shutil.copy(c.split('.')[0] + '_info.png', dst_dir.split('.')[0] + '_info.png')
+
+            structs, slices = self._connect_loops_struct(the_full_sse_list, n_chains, p, centroids, self.para.construct_keep)
+            out_path = outdir + '/output_' + '-'.join(str(v) for v in p) + '_' + str(rank) + '_' + str(scores[ind]) + '.pdb'
+            pdbutils.merge_save_struct(out_path, structs, slices)     
    
     def new_loop_search_fast(self, _full_sse_list, sat, trunc, workdir, loop_range=[3, 20]):
         """#Find loops for each pair of nearby N- and C-termini. return slice_lengths?"""      
@@ -394,7 +402,7 @@ class SmallProt:
     def _remove_redundancy(self, cluster_count_cut):
         reduced_order_infos = []
         self.infos.sort(key = lambda x: x.clust_num, reverse = True) 
-        redundant_inds = []
+        redundant_inds = set()
         for i in range(len(self.infos)-1):
             if i in redundant_inds or self.infos[i].cent_pdb=='':             
                 continue
@@ -410,16 +418,15 @@ class SmallProt:
                 else:
                     min_dist, min_dist_ind = peputils.cal_sse_dist([self.infos[j].cent_pdb, self.infos[i].cent_pdb])               
                 if min_dist < self.para.rmsdCut: 
-                #if min_dist < 100:        
                     self.infos[j].redundancy = self.infos[i].trunc_info + " " + self.infos[i].loop_info + " " + str(self.infos[i].loop_len)         
-                    redundant_inds.append(j)
+                    redundant_inds.add(j)
 
-        outdir = self.loop_workdir + '/reduced_loops'
-        if not os.path.exists(outdir):
-            os.mkdir(outdir)
-        for v in reduced_order_infos:
-            dst_dir = outdir + '/' + v.cent_pdb.split('/')[-1]
-            shutil.copy(v.cent_pdb,dst_dir)
+        # outdir = self.loop_workdir + '/reduced_loops'
+        # if not os.path.exists(outdir):
+        #     os.mkdir(outdir)
+        # for v in reduced_order_infos:
+        #     dst_dir = outdir + '/' + v.cent_pdb.split('/')[-1]
+        #     shutil.copy(v.cent_pdb,dst_dir)
 
         return reduced_order_infos
 
@@ -464,7 +471,7 @@ class SmallProt:
                     return False
         return True
  
-    def _connect_loops_struct(self, _full_sse_list, n_chains, permutation, centroids):
+    def _connect_loops_struct(self, _full_sse_list, n_chains, permutation, centroids, keep=1):
         """Find the min distance aa pair to connect."""
         pdbs_to_combine = [''] * (2 * n_chains - 1)
         pdbs_to_combine[::2] = [_full_sse_list[idx] for idx in permutation]
@@ -473,9 +480,8 @@ class SmallProt:
         inds = [[0,0] for i in range(len(pdbs_to_combine))]
         for i in range(len(pdbs_to_combine)-1):
             j = i + 1
-            min_dist, min_dist_ind, qrep_nres = peputils.cal_aa_dist([pdbs_to_combine[i], pdbs_to_combine[j]])
-            #print('min_dist_ind')
-            #print(min_dist_ind)
+            # keep == 0, keep min; keep == -1, keep loop; keep == 1, keep seed. 
+            min_dist, min_dist_ind, qrep_nres = peputils.cal_aa_dist([pdbs_to_combine[i], pdbs_to_combine[j]], i%2==0, self.para.loop_query_win, keep)       
             if i%2==0:          
                 inds[i][1] = min_dist_ind[0]
                 inds[j][0] = min_dist_ind[1]
@@ -491,7 +497,7 @@ class SmallProt:
         structs = [pdbutils.get_struct('test_' + str(i), pdbs_to_combine[i]) for i in range(len(pdbs_to_combine))]
         return structs, slices
       
-    def _write_file(self, filename, infos):
+    def _write_summary_file(self, filename, infos):
         with open(filename, 'w') as f:
             f.write('trunc_info\tloop_info\tloop_len\tclust_num\tcent_pdb\tredundancy\tclust_num_2nd\n')
             for r in infos:

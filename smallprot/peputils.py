@@ -42,7 +42,9 @@ def cal_sse_dist(sse_list):
 
     return min_dist, min_dist_ind
 
-def cal_aa_dist(sse_list):
+#Calculate minimum distance between [seed and loop] or [loop and seed]
+#return index of the two aa postions of miniumn distant.
+def cal_aa_dist(sse_list, seedfirst, loop_query_win, keep =0):
     n_reps = len(sse_list)
     if n_reps != 2:
         raise AssertionError('sse_list does not contain 2 sses.')
@@ -55,10 +57,29 @@ def cal_aa_dist(sse_list):
     for i in range(qrep_nres[0]):
         for j in range(qrep_nres[1]):
             for z in range(4):
-                win_dists[i, j] += dists[qrep_natoms[0] + i*4 + z, qrep_natoms[1] + j*4 + z]      
-    min_dist_ind = np.unravel_index(win_dists.argmin(), win_dists.shape)
+                win_dists[i, j] += dists[qrep_natoms[0] + i*4 + z, qrep_natoms[1] + j*4 + z]  
+    if keep ==0:
+        min_dist_ind = np.unravel_index(win_dists.argmin(), win_dists.shape)
+    elif keep == -1 and seedfirst:
+        ind = win_dists[:, 0].argmin()
+        min_dist_ind = [ind, 0]
+    elif keep == -1 and not seedfirst:
+        ind = win_dists[qrep_nres[0]-1, :].argmin()
+        min_dist_ind = [qrep_nres[0]-1, ind] 
+    elif keep == 1 and seedfirst:   
+        ind = win_dists[:, loop_query_win -1].argmin()
+        min_dist_ind = [ind, loop_query_win -1]    
+    elif keep == 1 and not seedfirst:
+        ind = win_dists[qrep_nres[0] -1 - loop_query_win, :].argmin()
+        min_dist_ind = [qrep_nres[0] -1 - loop_query_win, ind]
+        
     min_dist = win_dists[min_dist_ind]
+    
     return min_dist, min_dist_ind, qrep_nres
+
+#Calculate minimum distance between [one aa, seq]
+# return index of the aa and the aa positions of the qeq.
+
 
 def cal_loop_mid_dist(sse_list):
     n_reps = len(sse_list)

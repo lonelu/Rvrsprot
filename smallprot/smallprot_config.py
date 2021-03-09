@@ -56,7 +56,8 @@ class Parameter:
     def __init__(self, num_iter = 3, top = 5, master_query_top = 200, screen_compactness = False, rmsdCut = 1.0, 
     qbits_rmsd = 1.5, qbits_window = 10, secstruct = None, min_nbrs = 1, lowest_rmsd_loop = True, 
     database='/mnt/e/GitHub_Design/Qbits/database', loop_target_list='/mnt/e/GitHub_Design/master_db/list', 
-    master_query_loop_top = 200, max_nc_dist = 15.0, loop_query_win =7, min_loop_length = 3, max_loop_length=20, cluster_count_cut=20, loop_distance_cut=15):
+    master_query_loop_top = 200, max_nc_dist = 15.0, loop_query_win =7, min_loop_length = 3, max_loop_length=20, 
+    cluster_count_cut=20, loop_distance_cut=15, construct_keep = 0):
         self.num_iter = num_iter  
         self.top = top      
         self.master_query_top = master_query_top
@@ -78,6 +79,7 @@ class Parameter:
         self.max_loop_length=max_loop_length
         self.cluster_count_cut=cluster_count_cut
         self.loop_distance_cut=loop_distance_cut
+        self.construct_keep = construct_keep
 #Write and Read Parameters used for Smallprot
 
 def writeConfig(folderPath = ''):
@@ -102,6 +104,7 @@ def writeConfig(folderPath = ''):
                         'max_loop_length': '20',
                         'cluster_count_cut': '20',
                         'loop_distance_cut': '15',
+                        'construct_keep': '0'
                         }
 
     with open(folderPath + 'parameter.ini', 'w') as configfile:
@@ -130,6 +133,7 @@ def writeConfig(filePath, para):
                         'max_loop_length': str(para.max_loop_length),
                         'cluster_count_cut': str(para.cluster_count_cut),
                         'loop_distance_cut': str(para.loop_distance_cut),
+                        'construct_keep': str(para.construct_keep)
                         }
 
     with open(filePath, 'w') as configfile:
@@ -160,6 +164,7 @@ def readConfig(filePath = 'parameter.ini'):
     para.max_loop_length = cfg.getint('Smallprot','max_loop_length')
     para.cluster_count_cut = cfg.getint('Smallprot','cluster_count_cut')
     para.loop_distance_cut = cfg.getint('Smallprot','loop_distance_cut')
+    para.construct_keep = cfg.getint('Smallprot', 'construct_keep')
     return para
 
 

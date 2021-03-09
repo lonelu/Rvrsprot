@@ -30,15 +30,16 @@ para = smallprot_config.Parameter(
         min_loop_length = 3,
         max_loop_length=20,
         cluster_count_cut=20,
-        loop_distance_cut=15
+        loop_distance_cut=15,
+        construct_keep = 1
 )
 
 
-seed_pdb = '/mnt/e/GitHub_Design/smallprot/data/nina/seed.pdb'
+seed_pdb = '/mnt/e/DesignData/nina/seed.pdb'
 query_pdb = None
 exclusion_pdb = None
 
-workdir = '/mnt/e/GitHub_Design/smallprot/data/nina/output_test_build2/'
+workdir = '/mnt/e/DesignData/nina/output_test_build1/'
 
 
 hhh = smallprot.SmallProt(seed_pdb, query_pdb, exclusion_pdb,  workdir, para)
