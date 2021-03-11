@@ -271,7 +271,7 @@ class SmallProt:
         #Find loop combine candidates.
         combs, ps, scores = self._extract_top_hit(reduced_order_infos, n_chains, sat, cluster_count_cut)
         self.combs.extend(combs)
-
+        #print("combs: "+ str(len(combs)))
         output_cut = output_cut if len(combs) > output_cut else len(combs)
         inds = np.argsort(scores)[::-1][:output_cut]
         for rank in range(len(inds)):
@@ -434,6 +434,7 @@ class SmallProt:
         combs = []
         ps = []
         for p in permutations(range(n_chains)):
+            print(p)
             if not np.all([sat[p[j], p[j+1]] for j in range(n_chains - 1)]):
                 continue
             all_keys = []
@@ -446,7 +447,8 @@ class SmallProt:
             if 0 in [len(v) for v in all_keys]:
                 continue
             for comb in product(*all_keys):
-                if self._check_comb_validity(comb, self.para.loop_distance_cut):
+                print(comb)
+                if not self._check_comb_validity(comb, self.para.loop_distance_cut):
                     continue
                 combs.append(comb)
                 ps.append(p)

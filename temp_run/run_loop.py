@@ -25,7 +25,7 @@ para = smallprot_config.Parameter(
         loop_target_list='/mnt/e/GitHub_Design/master_db/list',   
         ###For loop searching     
         master_query_loop_top = 200,
-        max_nc_dist = 15.0,
+        max_nc_dist = 16.0,
         loop_query_win =7,   
         min_loop_length = 3,
         max_loop_length=20,

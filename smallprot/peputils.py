@@ -70,8 +70,8 @@ def cal_aa_dist(sse_list, seedfirst, loop_query_win, keep =0):
         ind = win_dists[:, loop_query_win -1].argmin()
         min_dist_ind = [ind, loop_query_win -1]    
     elif keep == 1 and not seedfirst:
-        ind = win_dists[qrep_nres[0] -1 - loop_query_win, :].argmin()
-        min_dist_ind = [qrep_nres[0] -1 - loop_query_win, ind]
+        ind = win_dists[qrep_nres[0] - loop_query_win, :].argmin()
+        min_dist_ind = [qrep_nres[0] - loop_query_win, ind]
         
     min_dist = win_dists[min_dist_ind]
     
