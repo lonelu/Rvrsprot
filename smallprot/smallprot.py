@@ -448,7 +448,7 @@ class SmallProt:
                 continue
             for comb in product(*all_keys):
                 print(comb)
-                if not self._check_comb_validity(comb, self.para.loop_distance_cut):
+                if self._check_comb_validity(comb, self.para.loop_distance_cut):
                     continue
                 combs.append(comb)
                 ps.append(p)
