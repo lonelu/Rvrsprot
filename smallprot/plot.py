@@ -5,30 +5,13 @@ import pandas as pd
 import numpy as np
 import qbits
 from smallprot import constant
+from smallprot import extract_master
 import os
 
 
-def _plot_log(fig, ax, seqfile, seqlen, filepath):
-    with open(seqfile, 'r') as f:
-        lines = f.read().split('\n')
-    all_seqs = []
-    for line in lines:
-        if len(line) > 0:
-            seq = ''
-            for res in line.split(' '):
-                if len(res) == 3 and res[0].isalpha():
-                    seq += qbits.constants.one_letter_code[res]
-                elif len(res) == 4 and res[0] == '[':
-                    seq += qbits.constants.one_letter_code[res[1:]]
-                elif len(res) == 4 and res[-1] == ']':
-                    seq += qbits.constants.one_letter_code[res[:-1]]
-            all_seqs.append(seq)
-    seqs = []
-    for s in all_seqs:
-        if len(s) == 14 + seqlen:            
-            seqs.append(s)
-
-    df = logomaker.alignment_to_matrix(sequences=seqs, to_type='counts',
+def _plot_log(fig, ax, seqs):
+    seqs_one_letter = extract_master._get_loop_candidate_seqs_one_letter(seqs)
+    df = logomaker.alignment_to_matrix(sequences=seqs_one_letter, to_type='counts',
                                             characters_to_ignore='-', pseudocount=0.01)
     logo = logomaker.Logo(df,
                         ax = ax,
@@ -43,26 +26,14 @@ def _plot_log(fig, ax, seqfile, seqlen, filepath):
     ax.set_xticklabels(xs)
 
 
-def _plot_hydro(fig, ax, seqfile, seqlen, filepath, loop_query_win):
-    with open(seqfile, 'r') as f:
-        lines = f.read().split('\n')
-    all_hydro = []
-    for line in lines:
-        if len(line) > 0:
-            hydro = []
-            for res in line.split(' '):
-                if len(res) == 3 and res[0].isalpha():
-                    hydro.append(constant.hydro_dict[res]) 
-                elif len(res) == 4 and res[0] == '[':
-                    hydro.append(constant.hydro_dict[res[1:]])
-                elif len(res) == 4 and res[-1] == ']':
-                    hydro.append(constant.hydro_dict[res[:-1]])
-            if len(hydro) == seqlen + 2*loop_query_win:
-                all_hydro.append(hydro)
-    all_hydro_arr = np.array(all_hydro)
+def _plot_hydro(fig, ax, seqs, seqlen, loop_query_win):
+    all_hydro=[]
+    for seq in seqs:
+        hydro = [constant.hydro_dict[res] for res in seq]
+        all_hydro.append(hydro)
 
-    means = np.mean(all_hydro_arr, 0)
-    sds = np.std(all_hydro_arr, 0)
+    means = np.mean(all_hydro, 0)
+    sds = np.std(all_hydro, 0)
 
     x = list(range(1, seqlen + 2*loop_query_win+1))
     #You can plot different hydro_scales or all of them.
@@ -74,25 +45,15 @@ def _plot_hydro(fig, ax, seqfile, seqlen, filepath, loop_query_win):
     ax.set_xticks(x)
 
 
-def _plot_propensity(fig, ax, seqfile, seqlen, filepath, loop_query_win):
-    with open(seqfile, 'r') as f:
-        lines = f.read().split('\n')
+def _plot_propensity(fig, ax, seqs, seqlen, loop_query_win):
+
     all_propen = []
-    for line in lines:
-        if len(line) > 0:
-            propen = []
-            for res in line.split(' '):
-                if len(res) == 3 and res[0].isalpha():
-                    propen.append(constant.propensity_dict[res]) 
-                elif len(res) == 4 and res[0] == '[':
-                    propen.append(constant.propensity_dict[res[1:]])
-                elif len(res) == 4 and res[-1] == ']':
-                    propen.append(constant.propensity_dict[res[:-1]])
-            if len(propen) == seqlen + 2*loop_query_win:
-                all_propen.append(propen)
-    all_propen_arr = np.array(all_propen)
-    means = np.mean(all_propen_arr, 0)
-    sds = np.std(all_propen_arr, 0)
+    for seq in seqs:
+        propen = [constant.propensity_dict[res] for res in seq]
+        all_propen.append(propen)
+
+    means = np.mean(all_propen, 0)
+    sds = np.std(all_propen, 0)
 
     x = list(range(1, seqlen + 2*loop_query_win+1))
     #for i in range(len(constant.propensity_scale)):
@@ -105,7 +66,7 @@ def _plot_propensity(fig, ax, seqfile, seqlen, filepath, loop_query_win):
     plt.savefig(filepath+'_helix_propen.png')
     plt.clf()
 
-def _plot_phipsi(fig, ax, phi, psi, seqlen, filepath):
+def _plot_phipsi(fig, ax, phi, psi, seqlen):
     #plt.figure(figsize=(10, 3.5))
     x = list(range(1, len(phi) + 1))
     ax.plot(x, phi, label = 'phi')
@@ -122,7 +83,7 @@ def _plot_phipsi(fig, ax, phi, psi, seqlen, filepath):
     # ax.set_xticks(xticks)
     # ax.set_yticks(yticks)
 
-def _plot_table(fig, ax, seq, phi, psi, filepath):
+def _plot_table(fig, ax, seq, phi, psi):
     data = []
     data.append([qbits.constants.one_letter_code[s] for s in seq])
     data.append([round(f, 1) if f else None for f in phi])
@@ -154,11 +115,13 @@ def _plot_table(fig, ax, seq, phi, psi, filepath):
 
 
 def _plot_all(filepath, seqfile, seqlen, loop_query_win, phi, psi, seq):
+    all_seqs, all_rmsds = extract_master._get_seq_rmsd(seqfile)
+    seqs = extract_master._get_loop_candidate_seqs(all_seqs, seqlen, [loop_query_win, loop_query_win])
     fig, (ax1, ax2, ax3, ax4) =plt.subplots(4, 1, figsize=(15, 14))
-    _plot_phipsi(fig, ax1, phi, psi, seqlen, filepath)
-    _plot_table(fig, ax2, seq, phi, psi, filepath)
-    _plot_log(fig, ax3, seqfile, seqlen, filepath)
-    _plot_hydro(fig, ax4, seqfile, seqlen, filepath, loop_query_win)
+    _plot_phipsi(fig, ax1, phi, psi, seqlen)
+    _plot_table(fig, ax2, seq, phi, psi)
+    _plot_log(fig, ax3, seqs)
+    _plot_hydro(fig, ax4, seqs, seqlen, loop_query_win)
     plt.tight_layout()
     plt.savefig(filepath+'_info.png')
     plt.close()

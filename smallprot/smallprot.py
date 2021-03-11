@@ -19,7 +19,7 @@ from itertools import product, permutations
 
 import qbits
 
-from smallprot import pdbutils, query, cluster_loops, smallprot_config, logger, peputils, constant, plot
+from smallprot import pdbutils, query, cluster_loops, smallprot_config, logger, peputils, constant, plot, extract_master
 
 @dataclass
 class Struct_info:
@@ -28,6 +28,8 @@ class Struct_info:
     loop_len: int 
     cent_pdb:str
     clust_num: int   
+    min_rmsd: float
+    median_rmsd: float
     redundancy:str = "Unknown" 
     clust_num_2nd: int = 0
 
@@ -184,8 +186,8 @@ class SmallProt:
         self.c_truncations = c_truncations
         # generate loops
         _full_sse_list = self.full_sse_list.copy()
-        for sse in _full_sse_list:
-            self.log.info(sse) 
+        # for sse in _full_sse_list:
+        #     self.log.info(sse) 
         self._generate_trunc_loops(self.full_sse_list, sat, self.loop_workdir, direction, n_truncations, c_truncations, self.para.cluster_count_cut, self.loop_range)     
         self.log.info('Finish build protein.')
 
@@ -317,7 +319,7 @@ class SmallProt:
             clusters_exist = self._loop_search_query_search(loop_workdir, loop_query, loop_outfile, loop_range)
             # cluster loops if the clusters do not already exist
             if not clusters_exist:
-                cluster_loops.run_cluster(loop_workdir + '/', self.log, outfile=loop_outfile)
+                cluster_loops.run_cluster(loop_workdir + '/', self.log, self.para.loop_query_win, outfile=loop_outfile)
 
     def _loop_search_query_search(self, loop_workdir, loop_query, loop_outfile, loop_range):
         """find loops with MASTER"""
@@ -340,7 +342,7 @@ class SmallProt:
                                     f.read().split('\n') if 
                                     line[:4] == 'ATOM'])
                     # subtract query ends from loop length
-                    l = len(res_ids) - 14
+                    l = len(res_ids) - 2*self.para.loop_query_win
                 l_dir = loop_workdir + '/' + str(l)
                 # create a directory for the loop length if necessary
                 if str(l) not in loop_workdir_paths:
@@ -370,6 +372,7 @@ class SmallProt:
                     _cent_pdb_workdir = self.loop_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])
                     if not os.path.exists(_cent_pdb_workdir):
                         os.mkdir(_cent_pdb_workdir)
+                  
                     if len(loop_pdbs) >= cluster_count_cut:
                         _cent = _cent_pdb_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]]) + '_' \
                             + workdir.split('/')[-1] + '_rg' + str(l) + '_' + str(len(loop_pdbs))
@@ -386,8 +389,10 @@ class SmallProt:
                         plot._plot_all(_cent, loop_workdir + '/seq.txt', l, self.para.loop_query_win, phi, psi, seq)
 
                     #Add summary
+
+                    min_rmsd, median_rmsd = extract_master._cal_loop_candidate_rmsd(loop_workdir + '/seq.txt', l, [self.para.loop_query_win, self.para.loop_query_win])
                     info = Struct_info(trunc_info = loop_workdir.split('/')[-2], loop_info = loop_workdir.split('/')[-1], 
-                            loop_len = l, clust_num = len(loop_pdbs), cent_pdb = _cent_pdb)              
+                            loop_len = l, clust_num = len(loop_pdbs), min_rmsd = min_rmsd, median_rmsd = median_rmsd, cent_pdb = _cent_pdb)              
                     #DO we need to check the size of the 2nd cluster
                     subdir = loop_workdir + '/{}/clusters/2'.format(str(l))
                     try:
@@ -434,7 +439,6 @@ class SmallProt:
         combs = []
         ps = []
         for p in permutations(range(n_chains)):
-            print(p)
             if not np.all([sat[p[j], p[j+1]] for j in range(n_chains - 1)]):
                 continue
             all_keys = []
@@ -501,10 +505,11 @@ class SmallProt:
       
     def _write_summary_file(self, filename, infos):
         with open(filename, 'w') as f:
-            f.write('trunc_info\tloop_info\tloop_len\tclust_num\tcent_pdb\tredundancy\tclust_num_2nd\n')
+            f.write('trunc_info\tloop_info\tloop_len\tclust_num\tmin_rmsd\tmedian_rmsd\tcent_pdb\tredundancy\tclust_num_2nd\n')
             for r in infos:
                 f.write(r.trunc_info + '\t' + r.loop_info + '\t' + str(r.loop_len) + '\t'
-                    + str(r.clust_num) + '\t' + r.cent_pdb + '\t'+ r.redundancy+ '\t' + str(r.clust_num_2nd) + '\n')       
+                    + str(r.clust_num) + '\t'+ str(r.min_rmsd) + '\t'+ str(r.median_rmsd)+ '\t'+ r.redundancy+ '\t' 
+                    + r.cent_pdb + '\t' + str(r.clust_num_2nd) + '\n')       
     
     ### FUNCTIONS FOR GENERATING SSEs
 

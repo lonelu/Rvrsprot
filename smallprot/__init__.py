@@ -6,3 +6,4 @@ from . import logger
 from . import peputils
 from . import constant
 from . import plot
+from . import extract_master
