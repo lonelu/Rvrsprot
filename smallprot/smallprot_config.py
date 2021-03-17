@@ -82,34 +82,6 @@ class Parameter:
         self.construct_keep = construct_keep
 #Write and Read Parameters used for Smallprot
 
-def writeConfig(folderPath = ''):
-    config = configparser.ConfigParser()
-    config['Smallprot'] = {
-                        'num_iter': '3',   
-                        'top': '5', 
-                        'master_query_top': 'master_query_top',                  
-                        'screen_compactness': 'false',
-                        'rmsdCut': '1.0',
-                        'qbits_rmsd': '1.5',
-                        'qbits_window': '10',
-                        'secstruct': 'None',
-                        'min_nbrs': '1',
-                        'lowest_rmsd_loop': 'true',
-                        'database': '/mnt/e/GitHub_Design/Qbits/database',
-                        'loop_target_list': '/mnt/e/GitHub_Design/master_db/list',  
-                        'master_query_loop_top': 'master_query_loop_top',
-                        'max_nc_dist': '15',
-                        'loop_query_win': '7',                      
-                        'min_loop_length': '3',
-                        'max_loop_length': '20',
-                        'cluster_count_cut': '20',
-                        'loop_distance_cut': '15',
-                        'construct_keep': '0'
-                        }
-
-    with open(folderPath + 'parameter.ini', 'w') as configfile:
-        config.write(configfile)
-
 
 def writeConfig(filePath, para):
     config = configparser.ConfigParser()

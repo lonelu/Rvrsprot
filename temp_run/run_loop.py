@@ -7,7 +7,7 @@ sys.path.append(r'/mnt/e/GitHub_Design/smallprot')
 
 print('Thanks for using smallprot!')
 
-from smallprot import smallprot, smallprot_config
+from smallprot import smallprot_config, loop_sse
 
 para = smallprot_config.Parameter(
         num_iter = 3, 
@@ -35,14 +35,14 @@ para = smallprot_config.Parameter(
 )
 
 
-seed_pdb = '/mnt/e/DesignData/nina/seed.pdb'
+seed_pdb = '/mnt/e/DesignData/smallprot_loops/nina/seed.pdb'
 query_pdb = None
 exclusion_pdb = None
 
-workdir = '/mnt/e/DesignData/nina/output_test_build1/'
+workdir = '/mnt/e/DesignData/smallprot_loops/nina/output_test_build1/'
 
 
-hhh = smallprot.SmallProt(seed_pdb, query_pdb, exclusion_pdb,  workdir, para)
+hhh = loop_sse.Loop_sse(seed_pdb, query_pdb, exclusion_pdb,  workdir, para)
 # n_truncations=list(range(20))
 # c_truncations=list(range(10))
 # n_truncations = [16, 17, 18, 19]

@@ -14,6 +14,7 @@ import prody
 from qbits import convex_hull, pdb, clash
 from itertools import combinations
 
+from smallprot import peputils
 
 parser = PDBParser(QUIET=True)
 io = PDBIO()
@@ -153,7 +154,34 @@ def merge_save_struct(out_path, structs, slices=[]):
     #io.save(out_path, select=NotDisorderedOrH())
     save_struct(chain0, out_path)
 
+def _cut_pdbs(full_sse_list, loop_query_win):
+    print('cut pdb')
+    print(full_sse_list[0])
+    print(full_sse_list[1])
+    n_reps = len(full_sse_list)     
+    qrep_natoms, qrep_nres, dists = peputils.cal_cdist(full_sse_list)
 
+    win_dists = np.zeros((n_reps, 2), dtype = int)
+    win_dists[0] = [0, qrep_nres[0]- loop_query_win]
+    for k in range(1, n_reps):
+        for x in range(2):
+            win_dist = [0]* (qrep_nres[k]- loop_query_win + 1)
+            for y in range(qrep_nres[k]- loop_query_win + 1):
+                for z in range(28):
+                    win_dist[y] += dists[qrep_natoms[0]+win_dists[0][x]*4 + z, qrep_natoms[k]+y*4 + z]
+            win_dists[k, x]=win_dist.index(min(win_dist))
+
+    slices = []
+    for i in range(n_reps):
+        #if i%2 == 0:
+        if win_dists[i][0] < win_dists[i][1]:
+            slices.append(slice(win_dists[i][0], win_dists[i][1] + loop_query_win))
+        else:
+            slices.append(slice(win_dists[i][1], win_dists[i][0] + loop_query_win))
+
+    structs = [get_struct(str(i), full_sse_list[i]) for i in range(n_reps)]
+    struct = merge_structs(structs, slices)
+    return struct
 
 def gen_loop_query_win(pdb_paths, out_path, inds, trunc, loop_query_win = 7, min_nbrs=0):
     structs = [] 
@@ -171,42 +199,6 @@ def gen_loop_query_win(pdb_paths, out_path, inds, trunc, loop_query_win = 7, min
     #io.set_structure(final_struct)
     #io.save(out_path, select=NotDisorderedOrH())
     save_struct(final_struct, out_path)
-
-def meature_phipsi(structpath):
-    protein = prody.parsePDB(structpath)
-    seq = []
-    phi_180 = []
-    psi_180 = []
-    for p in protein.iterResidues():
-        seq.append(p.getResname())
-        try:
-            phi_180.append(prody.calcPhi(p))
-        except:
-            phi_180.append(None)
-        try:
-            psi_180.append(prody.calcPsi(p))
-        except:
-            psi_180.append(None)
-    return phi_180, psi_180, seq
-
-    # print(structpath)
-    # structname = structpath.split('/')[-1]
-    # struct = parser.get_structure(structname, structpath)
-    # pp = ppb.build_peptides(struct)[0] #there is a 'bug' here, it cannot read the whole chain sometimes.
-    # print(pp.get_sequence())
-    # phipsi = pp.get_phi_psi_list()
-    # phipsi_180 = []
-    # for hs in phipsi:
-    #     if hs[0] == None:
-    #         phipsi_180.append(0)  
-    #     else:
-    #         phipsi_180.append(hs[0]/3.14159265*180)
-
-    #     if hs[1] == None:
-    #         phipsi_180.append(0)
-    #     else:  
-    #         phipsi_180.append(hs[1]/3.14159265*180)
-    # return phipsi_180
 
 
 def merge_pdbs(pdb_paths, out_path, min_nbrs=0, set_bfac=None):

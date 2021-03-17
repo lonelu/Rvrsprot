@@ -1,10 +1,14 @@
 import numpy as np
 from scipy.spatial.distance import cdist
 from smallprot import pdbutils, query, cluster_loops, smallprot_config, logger
+import prody as pr
 
 backbone = ['N', 'CA', 'C', 'O']
 
 def cal_cdist(sse_list):
+    '''
+    compute interatomic distance between SSE pairs
+    '''
     qrep_xyz = []
     qrep_natoms = [0]
     qrep_nres = []
@@ -17,14 +21,15 @@ def cal_cdist(sse_list):
         qrep_nres.append(int(len(qrep_xyz[-1])/4))
         qrep_natoms.append(qrep_natoms[-1] + len(qrep_xyz[-1]))
 
-    qrep_xyz = np.vstack(qrep_xyz)
-    # compute interatomic distance between SSE pairs
+    qrep_xyz = np.vstack(qrep_xyz)   
     dists = cdist(qrep_xyz, qrep_xyz)
     return qrep_natoms, qrep_nres, dists
 
-#Calculate minimun distance between two sses.
-#sse_list = [a, b], where a <= b.
 def cal_sse_dist(sse_list):
+    '''
+    Calculate minimun distance between two sses.
+    sse_list = [a, b], where a <= b.
+    '''
     n_reps = len(sse_list)
     if n_reps != 2:
         raise AssertionError('sse_list does not contain 2 sses.')
@@ -42,9 +47,11 @@ def cal_sse_dist(sse_list):
 
     return min_dist, min_dist_ind
 
-#Calculate minimum distance between [seed and loop] or [loop and seed]
-#return index of the two aa postions of miniumn distant.
 def cal_aa_dist(sse_list, seedfirst, loop_query_win, keep =0):
+    '''
+    Calculate minimum distance between [seed and loop] or [loop and seed]
+    return index of the two aa postions of miniumn distant.
+    '''
     n_reps = len(sse_list)
     if n_reps != 2:
         raise AssertionError('sse_list does not contain 2 sses.')
@@ -80,8 +87,11 @@ def cal_aa_dist(sse_list, seedfirst, loop_query_win, keep =0):
 #Calculate minimum distance between [one aa, seq]
 # return index of the aa and the aa positions of the qeq.
 
-
 def cal_loop_mid_dist(sse_list):
+    '''
+    If two loops are at the same directions. Their distance should be within a limitation.
+    For example, two loops at the same direction of a 4 helix bundles. The distance should be smaller than the 2*radius (2*R0) of the 4 helix bundles.
+    '''
     n_reps = len(sse_list)
     if n_reps != 2:
         raise AssertionError('sse_list does not contain 2 sses.')
@@ -92,5 +102,38 @@ def cal_loop_mid_dist(sse_list):
     for z in range(4):
         dist += dists[qrep_natoms[0] + int(qrep_nres[0]/2)*4 + z, qrep_natoms[1] + int(qrep_nres[1]/2)*4 + z]
     return dist   
+
+def cal_main_chian_dist(sse1_path, sse2_path):
+    '''
+    Use prody to get the median of min distance of each atom in sse1 to an atom in sse2.
+    For a 'good' helix bundles, each helix have two neibors that are of similar distances. 
+    Since there is no guaranttee of the atom selected of the second sse. This calculation is rough.
+    TO THINK: There may have a better way to do this.
+    '''
+    sse1 = pr.parsePDB(sse1_path)
+    atoms1 = sse1.select('name N CA C O')
+    sse2 = pr.parsePDB(sse2_path)
+    atoms2 = sse2.select('name N CA C O')
+    
+    #dists = pr.calcDistance(atoms1, atoms2) 
+    distmat = pr.buildDistMatrix(atoms1, atoms2[:-1])
+    median_ave_dist = np.median(np.amin(distmat, axis = 1))
+    return median_ave_dist
+
+def get_neighbor_dists(full_sse_list, direction):
+    dists = []
+    for i in range(len(direction)): 
+        dist1 = cal_main_chian_dist(full_sse_list[i], full_sse_list[i-1])
+        ind2 = i+1 if i < len(direction)-1 else 0
+        dist2 = cal_main_chian_dist(full_sse_list[i], full_sse_list[ind2])
+        dists.append([dist1, dist2])
+    return dists
+
+
+
+    
+
+
+
 
 

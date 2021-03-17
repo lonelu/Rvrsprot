@@ -11,13 +11,13 @@ from smallprot import smallprot, smallprot_config
 
 para = smallprot_config.Parameter(
         num_iter = 2, 
-        top = 20,      
+        top = 5,      
         master_query_top = 500,
         screen_compactness = False,
         rmsdCut = 1.0,
         qbits_rmsd = 1.5,
         qbits_window = 10,
-        secstruct = None,
+        secstruct = 'H',
         min_nbrs = 1,     
         lowest_rmsd_loop = True,
         ###Database
@@ -34,14 +34,12 @@ para = smallprot_config.Parameter(
         construct_keep = 1
 )
 
-seed_pdb = '/mnt/e/DesignData/trihelix/seed2.pdb'
+seed_pdb = '/mnt/e/DesignData/smallprot/trihelix/seed2.pdb'
 query_pdb = None
 exclusion_pdb = None
 
-workdir = '/mnt/e/DesignData/trihelix/output_top20'
+workdir = '/mnt/e/DesignData/smallprot/trihelix/output_top20'
 
 hhh = smallprot.SmallProt(seed_pdb, query_pdb, exclusion_pdb,  workdir, para)
-#n_truncations=list(range(5))
-#c_truncations=list(range(5))
-#hhh.build_protein(n_truncations = n_truncations, c_truncations = c_truncations)
+
 hhh.build_protein()
