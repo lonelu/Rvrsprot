@@ -242,17 +242,19 @@ class Loop_sse:
         reduced_order_infos = self._remove_redundancy(cluster_count_cut)
         
         #Write struct info
-        self._write_summary_file(workdir + '/summary.txt', self.infos) 
+        self._write_loop_summary(workdir + '/summary_loops.txt', self.infos) 
 
         self.write_looped_pdb(the_full_sse_list, reduced_order_infos, n_chains, sat, cluster_count_cut)
 
     def write_looped_pdb(self, the_full_sse_list, reduced_order_infos, n_chains, sat, cluster_count_cut, output_cut = 100):
         #Find loop combine candidates.
-        combs, ps, scores = self._extract_top_hit(reduced_order_infos, n_chains, sat, cluster_count_cut)
+        combs, ps, scores = self._extract_loop_combs(reduced_order_infos, n_chains, sat, cluster_count_cut)
         self.combs.extend(combs)
-        #print("combs: "+ str(len(combs)))
+        #print("combs: "+ str(len(combs)))     
         output_cut = output_cut if len(combs) > output_cut else len(combs)
         inds = np.argsort(scores)[::-1][:output_cut]
+
+        looped_pdb_info = []
         for rank in range(len(inds)):
             ind = inds[rank]
             comb = combs[ind]
@@ -271,8 +273,14 @@ class Loop_sse:
                 shutil.copy(c.split('.')[0] + '_info.png', dst_dir.split('.')[0] + '_info.png')
 
             structs, slices = self._connect_loops_struct(the_full_sse_list, n_chains, p, centroids, self.para.construct_keep)
-            out_path = outdir + '/output_' + '-'.join(str(v) for v in p) + '_' + str(rank) + '_' + str(scores[ind]) + '.pdb'
-            pdbutils.merge_save_struct(out_path, structs, slices)     
+            out_pdb = 'output_' + '-'.join(str(v) for v in p) + '_' + str(rank) + '_' + str(scores[ind]) + '.pdb'
+            out_pdb_path = outdir + '/' + out_pdb
+            pdbutils.merge_save_struct(out_pdb_path, structs, slices) 
+
+            looped_pdb_info.append(out_pdb + '\t' + str(scores[ind]) + '\t' + '\t'.join([os.path.basename(c) for c in centroids]))    
+        ##TO DO
+
+        self._write_looped_pdb_summary(self.workdir + '/summary_proteins.txt', looped_pdb_info) 
    
     def new_loop_search_fast(self, _full_sse_list, sat, trunc, workdir, loop_range=[3, 20]):
         """#Find loops for each pair of nearby N- and C-termini. return slice_lengths?"""      
@@ -334,6 +342,11 @@ class Loop_sse:
         return clusters_exist
 
     def _get_top_cluster_summary(self, workdir, n_chains, cluster_count_cut, loop_range):
+        '''
+        After search & cluster loops, calculate the clustered loop info. 
+        Copy the centroid or min-rmsd loop into self.workdir/loops_X_Y folder for futher consideration.
+        Plot the phi/psi, sequence logo, hydrophobicity.
+        '''
         _infos = []
         for p in permutations(range(n_chains), 2):          
             loop_workdir = workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])
@@ -343,42 +356,44 @@ class Loop_sse:
                     loop_pdbs = os.listdir(subdir)
                 except:
                     loop_pdbs = []
-                if len(loop_pdbs) > 1:              
-                    #Copy centroid pdb
-                    _cent_pdb = ''
-                    _cent_pdb_workdir = self.loop_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])
-                    if not os.path.exists(_cent_pdb_workdir):
-                        os.mkdir(_cent_pdb_workdir)
-                  
+                if len(loop_pdbs) > 1:       
+                    loop_rmsds, loop_seqs, loop_pdss = extract_master._get_pdbs_master_info(loop_workdir + '/match.txt', loop_workdir + '/seq.txt', loop_pdbs)
+                    _cent_pdb = ''                  
+                    #Copy centroid pdb and plot   
                     if len(loop_pdbs) >= cluster_count_cut:
-                        _cent = _cent_pdb_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]]) + '_' \
+                        _cent_pdb_workdir = self.loop_workdir + '/loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]])        
+                        _cent = 'loops_{}_{}'.format(string.ascii_uppercase[p[0]], string.ascii_uppercase[p[1]]) + '_' \
                             + workdir.split('/')[-1] + '_rg' + str(l) + '_' + str(len(loop_pdbs))
-                        _cent_pdb = _cent + '.pdb'
-                        # print(_cent_pdb)
-                        # print([subdir + '/' + lpdb for lpdb in loop_pdbs if 'centroid' in lpdb][0])
-                        in_pdb = [subdir + '/' + lpdb for lpdb in loop_pdbs if 'centroid' in lpdb][0]
+                        _cent_pdb = _cent_pdb_workdir + '/' + _cent + '.pdb'    
+                        if not os.path.exists(_cent_pdb_workdir):
+                            os.mkdir(_cent_pdb_workdir)
+                        if self.para.select_min_rmsd_pdb:
+                            in_pdb = subdir + '/' + loop_pdbs[np.argmin(loop_rmsds)]
+                        else:
+                            in_pdb = subdir + '/' + [lpdb for lpdb in loop_pdbs if 'centroid' in lpdb][0]
+
                         with gzip.open(in_pdb, 'rb') as f_in:
                             with open(_cent_pdb, 'wb') as f_out:
                                 shutil.copyfileobj(f_in, f_out)                  
 
-                        phi, psi, seq = struct_analysis.meature_phipsi(_cent_pdb)
+                        phi, psi, _sel_seq = struct_analysis.meature_phipsi(_cent_pdb)
+                        plot._plot_all(_cent_pdb_workdir + '/' + _cent, loop_seqs, loop_rmsds, l, self.para.loop_query_win, phi, psi, _sel_seq)     
 
-                        plot._plot_all(_cent, loop_workdir + '/seq.txt', l, self.para.loop_query_win, phi, psi, seq)
-
-                    #Add summary
-
-                    min_rmsd, median_rmsd = extract_master._cal_loop_candidate_rmsd(loop_workdir + '/seq.txt', l, [self.para.loop_query_win, self.para.loop_query_win])
+                    #Add summary                
                     info = Struct_info(trunc_info = loop_workdir.split('/')[-2], loop_info = loop_workdir.split('/')[-1], 
-                            loop_len = l, clust_num = len(loop_pdbs), min_rmsd = min_rmsd, median_rmsd = median_rmsd, cent_pdb = _cent_pdb)              
-                    #DO we need to check the size of the 2nd cluster
-                    subdir = loop_workdir + '/{}/clusters/2'.format(str(l))
+                            loop_len = l, clust_num = len(loop_pdbs), min_rmsd = min(loop_rmsds), median_rmsd = np.median(loop_rmsds), cent_pdb = _cent_pdb)              
+                    
+                    #DO we need to check the size of the 2nd cluster              
                     try:
-                        loop_pdbs2 = os.listdir(subdir)
+                        subdir2 = loop_workdir + '/{}/clusters/2'.format(str(l))
+                        loop_pdbs2 = os.listdir(subdir2)
+                        if len(loop_pdbs2) > 0:
+                            info.clust_num_2nd = str(len(loop_pdbs2)) 
                     except:
-                        loop_pdbs2 = []
-                    if len(loop_pdbs2) > 0:
-                        info.clust_num_2nd = str(len(loop_pdbs2))               
-                    _infos.append(info)
+                        print('Cluster 2 has zero')
+              
+                    _infos.append(info)      
+
         return _infos
 
     def _remove_redundancy(self, cluster_count_cut):
@@ -396,6 +411,7 @@ class Loop_sse:
                 if j in redundant_inds:                 
                     continue
                 if self.infos[i].loop_len <= self.infos[j].loop_len:
+                    #TO DO: The distance calculation is not the real distance.
                     min_dist, min_dist_ind = peputils.cal_sse_dist([self.infos[i].cent_pdb, self.infos[j].cent_pdb])
                 else:
                     min_dist, min_dist_ind = peputils.cal_sse_dist([self.infos[j].cent_pdb, self.infos[i].cent_pdb])               
@@ -412,7 +428,12 @@ class Loop_sse:
 
         return reduced_order_infos
 
-    def _extract_top_hit(self, reduced_order_infos, n_chains, sat, cluster_count_cut):
+    def _extract_loop_combs(self, reduced_order_infos, n_chains, sat, cluster_count_cut):
+        '''
+        With all the loops with >= cluster_count_cut. 
+        Try to find the combination so that they can loop the input sse.
+        For example, combination (loop_A_B, loop_B_C, loop_C_D) could loop (A, B, C, D) with direction [0, 1, 2, 3]
+        '''
         combs = []
         ps = []
         for p in permutations(range(n_chains)):
@@ -455,7 +476,12 @@ class Loop_sse:
         return True
  
     def _connect_loops_struct(self, _full_sse_list, n_chains, permutation, centroids, keep=1):
-        """Find the min distance aa pair to connect."""
+        '''
+        Put seed sses and loop candidates together and calculate the cut position for each.      
+        @ _full_sse_list: [string], list of sse path.
+        @ permutation: [int], list of direaction. for example [0, 1, 2, 3] means connect sses with order of [A, B C, D].
+        @ keep: keep == 0, keep min; keep == -1, keep loop; keep == 1, keep seed. 
+        '''
         pdbs_to_combine = [''] * (2 * n_chains - 1)
         pdbs_to_combine[::2] = [_full_sse_list[idx] for idx in permutation]
         pdbs_to_combine[1::2] = centroids
@@ -463,7 +489,7 @@ class Loop_sse:
         inds = [[0,0] for i in range(len(pdbs_to_combine))]
         for i in range(len(pdbs_to_combine)-1):
             j = i + 1
-            # keep == 0, keep min; keep == -1, keep loop; keep == 1, keep seed. 
+            # 
             min_dist, min_dist_ind, qrep_nres = peputils.cal_aa_dist([pdbs_to_combine[i], pdbs_to_combine[j]], i%2==0, self.para.loop_query_win, keep)       
             if i%2==0:          
                 inds[i][1] = min_dist_ind[0]
@@ -480,11 +506,24 @@ class Loop_sse:
         structs = [pdbutils.get_struct('test_' + str(i), pdbs_to_combine[i]) for i in range(len(pdbs_to_combine))]
         return structs, slices
       
-    def _write_summary_file(self, filename, infos):
+    def _write_loop_summary(self, filename, loop_infos):
+        '''
+        Write information of all loops.
+        @ loop_infos: [Struct_info]
+        '''
         with open(filename, 'w') as f:
             f.write('trunc_info\tloop_info\tloop_len\tclust_num\tmin_rmsd\tmedian_rmsd\tredundancy\tcent_pdb\tclust_num_2nd\n')
-            for r in infos:
+            for r in loop_infos:
                 f.write(r.trunc_info + '\t' + r.loop_info + '\t' + str(r.loop_len) + '\t'
                     + str(r.clust_num) + '\t'+ str(r.min_rmsd) + '\t'+ str(r.median_rmsd)+ '\t'+ r.redundancy+ '\t' 
                     + r.cent_pdb + '\t' + str(r.clust_num_2nd) + '\n')       
  
+    def _write_looped_pdb_summary(self, filename, looped_pdb_infos):
+        '''
+        Write the name of the looped_pdb, total score, name of each loop.
+        @ looped_pdb_infos: [string], each string contains info of one looped_pdb.
+        '''
+        with open(filename, 'w') as f:
+            f.write('filename\ttotal_score\tloops\n')
+            for r in looped_pdb_infos:
+                f.write(r + '\n')   

@@ -1,7 +1,9 @@
 import os
 import configparser
 
-""" Parameters for Smallprot
+#TO DO: The description need to be updated.
+'''
+Parameters for Smallprot
     query_pdb : str
         Path to PDB file of query structure from which to generate the 
         initial Qbit rep in the first design iteration.
@@ -51,13 +53,14 @@ import configparser
     loop_target_list : str, optional
         Filename of target list within the database of objects to 
         be used in MASTER queries for loops.
-"""
+'''
+
 class Parameter:
     def __init__(self, num_iter = 3, top = 5, master_query_top = 200, screen_compactness = False, rmsdCut = 1.0, 
     qbits_rmsd = 1.5, qbits_window = 10, secstruct = None, min_nbrs = 1, lowest_rmsd_loop = True, 
     database='/mnt/e/GitHub_Design/Qbits/database', loop_target_list='/mnt/e/GitHub_Design/master_db/list', 
-    master_query_loop_top = 200, max_nc_dist = 15.0, loop_query_win =7, min_loop_length = 3, max_loop_length=20, 
-    cluster_count_cut=20, loop_distance_cut=15, construct_keep = 0):
+    master_query_loop_top = 200, max_nc_dist = 15.0, loop_query_win =7, min_loop_length = 3, max_loop_length=20, select_min_rmsd_pdb = True,
+    cluster_count_cut=20, loop_distance_cut=15, construct_keep = 100):
         self.num_iter = num_iter  
         self.top = top      
         self.master_query_top = master_query_top
@@ -77,13 +80,16 @@ class Parameter:
         self.loop_query_win =loop_query_win  
         self.min_loop_length = min_loop_length
         self.max_loop_length=max_loop_length
+        self.select_min_rmsd_pdb = select_min_rmsd_pdb
         self.cluster_count_cut=cluster_count_cut
         self.loop_distance_cut=loop_distance_cut
         self.construct_keep = construct_keep
-#Write and Read Parameters used for Smallprot
 
 
 def writeConfig(filePath, para):
+    '''
+    Write Parameters used for Smallprot. Such a config file can help GUI development in the future.
+    '''
     config = configparser.ConfigParser()
     config['Smallprot'] = {
                         'num_iter': str(para.num_iter),   
@@ -103,6 +109,7 @@ def writeConfig(filePath, para):
                         'loop_query_win': str(para.loop_query_win),                      
                         'min_loop_length': str(para.min_loop_length),
                         'max_loop_length': str(para.max_loop_length),
+                        'select_min_rmsd_pdb': str(para.select_min_rmsd_pdb),
                         'cluster_count_cut': str(para.cluster_count_cut),
                         'loop_distance_cut': str(para.loop_distance_cut),
                         'construct_keep': str(para.construct_keep)
@@ -113,6 +120,9 @@ def writeConfig(filePath, para):
 
 
 def readConfig(filePath = 'parameter.ini'):
+    '''
+    Read Parameters used for Smallprot. Such a config file can help GUI development in the future.
+    '''
     cfg = configparser.ConfigParser()
     if not os.path.exists(filePath):
         print('Config file is not existed in the current folder.')
@@ -134,6 +144,7 @@ def readConfig(filePath = 'parameter.ini'):
     para.loop_query_win = cfg.getint('Smallprot', 'loop_query_win')  
     para.min_loop_length = cfg.getint('Smallprot','min_loop_length')
     para.max_loop_length = cfg.getint('Smallprot','max_loop_length')
+    para.select_min_rmsd_pdb = cfg.getboolean('Smallprot','select_min_rmsd_pdb')
     para.cluster_count_cut = cfg.getint('Smallprot','cluster_count_cut')
     para.loop_distance_cut = cfg.getint('Smallprot','loop_distance_cut')
     para.construct_keep = cfg.getint('Smallprot', 'construct_keep')

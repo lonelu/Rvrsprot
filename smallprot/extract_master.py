@@ -21,23 +21,31 @@ def _get_seq_rmsd(seqfile):
             all_seqs.append(seq)
     return all_seqs, all_rmsds
 
-def _get_loop_candidate_seqs(all_seqs, loop_len, loop_query_wins):
-    seqs = []
-    for s in all_seqs:
-        if len(s) == sum(loop_query_wins) + loop_len:            
-            seqs.append(s)
-    return seqs
-
 def _get_loop_candidate_seqs_one_letter(seqs):
     seqs_one_letter = []
     for s in seqs:      
         seqs_one_letter.append(''.join([qbits.constants.one_letter_code[res] for res in s]))
     return seqs_one_letter
 
-def _cal_loop_candidate_rmsd(seqfile, loop_len, loop_query_wins):
+def _get_pdbs_master_info(matchfile, seqfile, loop_pdbs):
+    with open(matchfile, 'r') as f:
+        ## A possible bug.
+        # rmsds = [float([val for val in line.split(' ') if val != ''][0]) 
+        #             for line in f.read().split('\n') if len(line) > 0]
+        all_pdss = [[val for val in line.split('/') if '.pds' in val][0] 
+                    for line in f.read().split('\n') if len(line) > 0]
     all_seqs, all_rmsds = _get_seq_rmsd(seqfile)
-    rmsds = []
-    for i in range(len(all_seqs)):
-        if len(all_seqs[i]) == sum(loop_query_wins) + loop_len:            
-            rmsds.append(all_rmsds[i])  
-    return min(rmsds), np.median(rmsds)
+
+    loop_rmsds = []
+    loop_seqs = []
+    loop_pdss = []
+    for loop_pdb in loop_pdbs:
+        if 'wgap' in loop_pdb:
+            idx = int(loop_pdb.split('_')[-1][4:-7]) - 1
+        else:
+            idx = int(loop_pdb.split('_')[-1][5:-7]) - 1
+        loop_rmsds.append(all_rmsds[idx])
+        loop_seqs.append(all_seqs[idx])
+        loop_pdss.append(all_pdss[idx])
+    return loop_rmsds, loop_seqs, loop_pdss
+    #return loop_pdbs[np.argmin(loop_rmsds)]

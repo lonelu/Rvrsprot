@@ -75,14 +75,6 @@ def _plot_phipsi(fig, ax, phi, psi, seqlen):
     ax.set_xticks(x)
     ax.set_ylabel("Angle", fontsize = 12)
 
-    # ax.plot(phipsi[2:-2:2], phipsi[3:-1:2], 's', color='red', markersize=5, markerfacecolor='white')
-    # ax.xlim(-180, 180)
-    # ax.ylim(-180, 180)
-    # xticks = [-180, -135, -90, -45, 0, 45, 90, 135, 180]
-    # yticks = [-180, -135, -90, -45, 0, 45, 90, 135, 180]
-    # ax.set_xticks(xticks)
-    # ax.set_yticks(yticks)
-
 def _plot_table(fig, ax, seq, phi, psi):
     data = []
     data.append([qbits.constants.one_letter_code[s] for s in seq])
@@ -113,15 +105,20 @@ def _plot_table(fig, ax, seq, phi, psi):
     tab.auto_set_font_size
     ax.set_ylabel("Legend", fontsize = 12)
 
+def _plot_rmsds(fig, ax, loop_rmsds):
+    ax.hist(loop_rmsds, bins = 10, color = 'blue', edgecolor = 'black')  
+    # Title and labels
+    ax.set_xlabel('RMSD', size = 12)
+    ax.set_ylabel('Count', size= 12)
 
-def _plot_all(filepath, seqfile, seqlen, loop_query_win, phi, psi, seq):
-    all_seqs, all_rmsds = extract_master._get_seq_rmsd(seqfile)
-    seqs = extract_master._get_loop_candidate_seqs(all_seqs, seqlen, [loop_query_win, loop_query_win])
-    fig, (ax1, ax2, ax3, ax4) =plt.subplots(4, 1, figsize=(15, 14))
-    _plot_phipsi(fig, ax1, phi, psi, seqlen)
-    _plot_table(fig, ax2, seq, phi, psi)
-    _plot_log(fig, ax3, seqs)
-    _plot_hydro(fig, ax4, seqs, seqlen, loop_query_win)
+
+def _plot_all(filepath, loop_seqs, loop_rmsds, seqlen, loop_query_win, phi, psi, seq):
+    fig, (ax1, ax2, ax3, ax4, ax5) =plt.subplots(5, 1, figsize=(15, 17.5))
+    _plot_rmsds(fig, ax1, loop_rmsds)
+    _plot_phipsi(fig, ax2, phi, psi, seqlen)
+    _plot_table(fig, ax3, seq, phi, psi)
+    _plot_log(fig, ax4, loop_seqs)
+    _plot_hydro(fig, ax5, loop_seqs, seqlen, loop_query_win)
     plt.tight_layout()
     plt.savefig(filepath+'_info.png')
     plt.close()
