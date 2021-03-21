@@ -16,5 +16,6 @@ designs/
 
 # Others
 data/
+gpu_run/
 smallprot/__pycache__/
 *.pyc

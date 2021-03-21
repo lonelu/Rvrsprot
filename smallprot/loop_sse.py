@@ -376,7 +376,7 @@ class Loop_sse:
                             with open(_cent_pdb, 'wb') as f_out:
                                 shutil.copyfileobj(f_in, f_out)                  
 
-                        phi, psi, _sel_seq = struct_analysis.meature_phipsi(_cent_pdb)
+                        phi, psi, _sel_seq = struct_analysis.cal_phipsi(_cent_pdb)
                         plot._plot_all(_cent_pdb_workdir + '/' + _cent, loop_seqs, loop_rmsds, l, self.para.loop_query_win, phi, psi, _sel_seq)     
 
                     #Add summary                
