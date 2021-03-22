@@ -10,16 +10,6 @@ print('Thanks for using smallprot!')
 from smallprot import smallprot_config, loop_sse
 
 para = smallprot_config.Parameter(
-        # num_iter = 3, 
-        # top = 5,      
-        # master_query_top = 200,
-        # screen_compactness = False,
-        # rmsdCut = 1.0,
-        # qbits_rmsd = 1.5,
-        # qbits_window = 10,
-        # secstruct = None,
-        # min_nbrs = 1,     
-        # lowest_rmsd_loop = True,
         ###Database
         database='/mnt/e/GitHub_Design/Qbits/database',
         loop_target_list='/mnt/e/GitHub_Design/master_db/list',   
@@ -29,6 +19,7 @@ para = smallprot_config.Parameter(
         loop_query_win =7,   
         min_loop_length = 3,
         max_loop_length=20,
+        select_min_rmsd_pdb = True,
         cluster_count_cut=20,
         loop_distance_cut=15,
         construct_keep = 0
