@@ -8,10 +8,13 @@ import prody as pr
 
 from datetime import datetime 
 from multiprocessing import Pool, Manager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logomaker
 import matplotlib.pyplot as plt
 import pandas as pd
+import pyrosetta
+from pyrosetta import rosetta
+
 
 from scipy.stats import mode
 from scipy.spatial.distance import cdist
@@ -23,9 +26,16 @@ from smallprot import pdbutils, query, cluster_loops, smallprot_config
 from smallprot import logger, peputils, constant, plot, extract_master, struct_analysis
 
 @dataclass
-class SSE_info:
+class Protein_info:
     ahull_in_ratio: float
-    median_min_dists: np.ndarray
+    volume: float
+    surface_area: float
+    sasa: float
+    compactness: float
+    sses: list = field(default_factory=list)
+    median_min_dists: list = field(default_factory=list)
+    
+
 
 class SmallProt:
     """A small protein in the process of generation by MASTER and Qbits.
@@ -88,6 +98,10 @@ class SmallProt:
         self.pre_full_sses = []
         self.pre_build_pdbs_summary = []
 
+        pyrosetta.init(extra_options="-ignore_zero_occupancy false ") 
+        self.pose = pyrosetta.rosetta.core.pose.Pose()        
+        self.sa = pyrosetta.rosetta.core.scoring.sasa.SasaCalc()
+
 
     def _prepare_pdbs(self, seed_pdb, query_pdb, exclusion_pdb, _workdir):
         # if necessary, split query pdb file into chains
@@ -145,14 +159,6 @@ class SmallProt:
         # print('output pdbs :')
         # print('\n'.join(self.output_pdbs))
         self.log.info('Finish build protein.')
-  
-    def build_protein_parallel(self):
-        """!!!Not working due to conflict with qbit."""
-        """Iteratively generate a protein using MASTER and Qbits."""
-        self._generate_proteins_parallel(self.para.num_iter)
-        # print('output pdbs :')
-        # print('\n'.join(self.output_pdbs))
-        self.log.info('Finish build protein.')
 
     ### FUNCTIONS FOR GENERATING SSEs
 
@@ -166,19 +172,13 @@ class SmallProt:
         print('Finish construct sses!')
         if len(self.pre_build_pdbs) > 0:   
             filename = self.workdir + '/protein_build_summary.txt'                  
-            #self._write_protein_summary(filename, self.pre_build_pdbs, self.pre_build_pdbs_summary)
-
+            self._write_protein_summary(filename, self.pre_build_pdbs, self.pre_build_pdbs_summary)
             print('Construct sses found.')
         else:
             print('No construct sses found.')
             return
 
-    def _write_protein_summary(self, filename, pdb_paths, summaries):
-        with open(filename, 'w') as f:
-            f.write('pdb_path\tca_in_ahull_ratio\tmedian_min_dist_diff\n')
-            for i in range(len(pdb_paths)):
-                median_min_dist = '\t'.join([ str(abs(x[0] -x[1])) for x in summaries[i][1]])
-                f.write(pdb_paths[i] + '\t' + str(summaries[i][0]) +  '\t' + '\n')           
+           
 
     def _const_protein(self, pdb, exclusion_pdb, full_sse_list, recursion_order):
         outdir = os.path.dirname(pdb)
@@ -190,7 +190,7 @@ class SmallProt:
         qreps = self._generate_qreps(pdb, exclusion_pdb, recursion_order, outdir)
         if qreps == None:
             return
-        if True:
+        if False:
             qreps = self._resize_qreps(qreps, full_sse_list, self.para.loop_query_win)
         for i, qrep in enumerate(qreps):
             seed_sse_lists = self._prepare_seed_sses(qrep, full_sse_list)
@@ -217,7 +217,7 @@ class SmallProt:
         #Filter final pdbs with limitations.
         #COMMENT: Note that to use alpha_hull for the helix bundles, the helix must be cutted properly. 
         #         Otherwise, the alpha_hull will be out of control.
-        ahull_in_ratio = struct_analysis.get_in_ahull_ratio(_full_pdb)
+        ahull_in_ratio, volume, surface_area = struct_analysis.cal_ahull(_full_pdb)
         # if ahull_in_ratio < 0.5:
         #     return
         distances = peputils.get_neighbor_dists(full_sse_list, list(range(len(full_sse_list))))
@@ -230,8 +230,18 @@ class SmallProt:
         shutil.copyfile(_full_pdb, _full_pdb_new)
         
         self.pre_build_pdbs.append(_full_pdb_new)
-        self.pre_full_sses.append(full_sse_list)  
-        self.pre_build_pdbs_summary.append([ahull_in_ratio, distances])
+        self.pre_full_sses.append(full_sse_list) 
+        sasa = self._cal_sasa(_full_pdb)
+        compactness = pdbutils.calc_compactness(_full_pdb)
+        info = Protein_info(ahull_in_ratio = ahull_in_ratio, volume = volume, surface_area = surface_area, 
+            sasa = sasa, compactness = compactness, sses = full_sse_list, median_min_dists = distances)
+        self.pre_build_pdbs_summary.append(info)
+
+    def _cal_sasa(self, full_pdb):
+        self.pose = rosetta.core.import_pose.pose_from_file(full_pdb)      
+        sasa = self.sa.calculate(self.pose)
+        #print(sasa)
+        return sasa
 
     def _const_prot_loop(self, pdb, full_sse_list, outdir):
         '''
@@ -388,7 +398,24 @@ class SmallProt:
             self.queues.append([_seed_pdb, _exclusion_pdb, _full_sse_list, recursion_order - 1])
         return    
             
-    ### NEW FUNCTIONS FOR GENERATING SSEs IN PARALLEL
+    def _write_protein_summary(self, filename, pdb_paths, infos):
+        with open(filename, 'w') as f:
+            f.write('pdb_path\tca_in_ahull_ratio\tvolume\tsurface_area\tsasa\tcompactness\tmedian_min_dist_diff\n')
+            for i in range(len(pdb_paths)):
+                median_min_dist = '\t'.join([str(d) for d in infos[i].median_min_dists])
+                f.write(pdb_paths[i] + '\t' + str(infos[i].ahull_in_ratio) + '\t' + str(infos[i].volume) 
+                    +'\t' + str(infos[i].surface_area) + '\t' + str(infos[i].sasa) + '\t' + str(infos[i].compactness) 
+                    + '\t' + median_min_dist + '\n')
+    
+    ### NEW FUNCTIONS FOR GENERATING SSEs IN PARALLEL. not working yet.
+
+    def build_protein_parallel(self):
+        """!!!Not working due to conflict with qbit."""
+        """Iteratively generate a protein using MASTER and Qbits."""
+        self._generate_proteins_parallel(self.para.num_iter)
+        # print('output pdbs :')
+        # print('\n'.join(self.output_pdbs))
+        self.log.info('Finish build protein.')
 
     def _generate_proteins_parallel(self, recursion_order):
         manager = Manager()

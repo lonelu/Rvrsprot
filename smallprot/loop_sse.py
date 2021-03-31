@@ -82,12 +82,13 @@ class Loop_sse:
         smallprot_config.writeConfig(_workdir + '/parameter.ini', self.para)
         #--------------------------------       
         self._prepare_pdbs(seed_pdb, query_pdb, exclusion_pdb,  _workdir)
-        self.workdir = _workdir  
-        self.loop_workdir = _workdir     
-        self.loop_range = [self.para.min_loop_length, self.para.max_loop_length]
         self.targetList = os.path.realpath(self.para.database) + '/pds_list_2p5.txt'
         self.chains_dict = os.path.realpath(self.para.database) + '/db_2p5A_0p3rfree_chains_dictionary.pkl'
-        #--------------------------------   
+        #--------------------------------  
+        self.workdir = _workdir  
+        self.loop_workdir = _workdir     
+        self.loop_range = [self.para.min_loop_length, self.para.max_loop_length] 
+        #--------------------------------
         self.n_truncations = []
         self.c_truncations = []
         self.sat = None

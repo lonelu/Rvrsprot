@@ -126,7 +126,8 @@ def get_neighbor_dists(full_sse_list, direction):
         dist1 = cal_main_chian_dist(full_sse_list[i], full_sse_list[i-1])
         ind2 = i+1 if i < len(direction)-1 else 0
         dist2 = cal_main_chian_dist(full_sse_list[i], full_sse_list[ind2])
-        dists.append([dist1, dist2])
+        dists.append(dist1)
+        dists.append(dist2)
     return dists
 
 

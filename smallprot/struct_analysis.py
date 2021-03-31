@@ -44,7 +44,7 @@ def cal_phipsi_depre(pdb_path):
             phipsi_180.append(hs[1]/3.14159265*180)
     return phipsi_180
 
-def get_in_ahull_ratio(_full_pdb, alpha=5):
+def cal_ahull(_full_pdb, alpha=5):
     '''
     get the ahull of the pdb and calculate the ratio of ca that are in the ahull.
     '''
@@ -52,10 +52,13 @@ def get_in_ahull_ratio(_full_pdb, alpha=5):
     ahull = qbits.convex_hull.AlphaHull(alpha)
     ahull.set_coords(prody_pdb)
     ahull.calc_hull()
+    volume = ahull.get_volume()
+    surface_area = ahull.get_surface_area()
+
     ca_sel = prody_pdb.select('name CA')       
     ca_coords = ca_sel.getCoords()
     ca_in_hull = ahull.pnts_in_hull(ca_coords)
-    return sum(ca_in_hull)/len(ca_in_hull)
+    return sum(ca_in_hull)/len(ca_in_hull), volume, surface_area
 
 def cal_ca_dihedral(pdb_path):
     '''

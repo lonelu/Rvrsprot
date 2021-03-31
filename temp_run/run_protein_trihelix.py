@@ -43,3 +43,19 @@ workdir = '/mnt/e/DesignData/smallprot/trihelix/output_top20'
 hhh = smallprot.SmallProt(seed_pdb, query_pdb, exclusion_pdb,  workdir, para)
 
 hhh.build_protein()
+
+'''
+hhh.pre_build_pdbs_summary[0]
+
+def _write_protein_summary(filename, pdb_paths, infos):
+    with open(filename, 'w') as f:
+        f.write('pdb_path\tca_in_ahull_ratio\tmedian_min_dist_diff\n')
+        for i in range(len(pdb_paths)):
+            median_min_dist = '\t'.join([str(d) for d in infos[i].median_min_dists])
+            f.write(pdb_paths[i] + '\t' + str(infos[i].ahull_in_ratio) +  '\t' + median_min_dist + '\n')
+
+filename = hhh.workdir + '/protein_build_summary.txt' 
+hhh._write_protein_summary(filename, hhh.pre_build_pdbs, hhh.pre_build_pdbs_summary)
+
+
+'''
