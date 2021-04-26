@@ -141,4 +141,10 @@ def _plot_all(filepath, loop_seqs, loop_rmsds, seqlen, loop_query_win, phi, psi,
     # pdf.output(filepath + '_report.pdf', 'F')
     # #os.remove(filepath + '_.png')
 
+def _plot_contact_map(filepath):
+    pdb_prody = pr.parsePDB(file_path)
+    ca = pdb_prody.select('name CA')
+    pr.showContactMap(ca, cmap = 'Reds')
+    plt.savefig(filepath[:-4] + '.png')
+    plt.close()
 

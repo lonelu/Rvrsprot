@@ -4,7 +4,7 @@ test/
 tutorials/.ipynb_checkpoints
 tutorials/output
 functionalities.rst
-designs/
+
 
 # Docs
 /docs/_build/
@@ -16,6 +16,5 @@ designs/
 
 # Others
 data/
-gpu_run/
-smallprot/__pycache__/
+ProtCID/__pycache__/
 *.pyc

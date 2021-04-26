@@ -1,11 +1,15 @@
 import os
 import sys
+sys.path.append(r'/mnt/e/GitHub_Design/Qbits')
+sys.path.append(r'/mnt/e/GitHub_Design/smallprot')
+
 import prody as pr
 import numpy as np
 from scipy.sparse import csr_matrix
 from smallprot import cluster_loops
 
-path = '/mnt/e/GitHub_Design/smallprot/huong/output1/loops_C_D/'
+#path = '/mnt/e/GitHub_Design/smallprot/huong/output1/loops_C_D/'
+path = '/mnt/e/DesignData/smallprot_loops/rocker/test_cluster/'
 
 dirs = [f for f in os.listdir(path) if f[0] != '.']
 
@@ -30,6 +34,21 @@ clu = cluster_loops.Cluster(**kwargs)
 clu.set_pdbs(pdbs)
 
 clu.set_coords()
+'''
+pdb = pdbs[0]
+coords = pdb.select(clu.selection).getCoords()
+type(coords) #numpy.ndarray
+clu.pdb_coords.append(coords)
+type(clu.pdb_coords) #list
+
+clu.pdb_coords = list()
+for pdb in clu.pdbs:
+    clu._set_coords(pdb)
+type(clu.pdb_coords) #list   
+
+clu.pdb_coords = np.array(clu.pdb_coords, dtype='float32')
+type(clu.pdb_coords) #numpy.ndarray
+'''
 
 #-----------------------------------------
 X= clu.pdb_coords
