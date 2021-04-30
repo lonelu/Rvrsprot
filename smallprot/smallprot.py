@@ -12,8 +12,8 @@ from dataclasses import dataclass, field
 import logomaker
 import matplotlib.pyplot as plt
 import pandas as pd
-import pyrosetta
-from pyrosetta import rosetta
+#import pyrosetta
+#from pyrosetta import rosetta
 
 
 from scipy.stats import mode
@@ -98,9 +98,9 @@ class SmallProt:
         self.pre_full_sses = []
         self.pre_build_pdbs_summary = []
 
-        pyrosetta.init(extra_options="-ignore_zero_occupancy false ") 
-        self.pose = pyrosetta.rosetta.core.pose.Pose()        
-        self.sa = pyrosetta.rosetta.core.scoring.sasa.SasaCalc()
+        #pyrosetta.init(extra_options="-ignore_zero_occupancy false ") 
+        #self.pose = pyrosetta.rosetta.core.pose.Pose()        
+        #self.sa = pyrosetta.rosetta.core.scoring.sasa.SasaCalc()
 
 
     def _prepare_pdbs(self, seed_pdb, query_pdb, exclusion_pdb, _workdir):
@@ -231,17 +231,18 @@ class SmallProt:
         
         self.pre_build_pdbs.append(_full_pdb_new)
         self.pre_full_sses.append(full_sse_list) 
-        sasa = self._cal_sasa(_full_pdb)
+        #sasa = self._cal_sasa(_full_pdb)
+        sasa = 0
         compactness = pdbutils.calc_compactness(_full_pdb)
         info = Protein_info(ahull_in_ratio = ahull_in_ratio, volume = volume, surface_area = surface_area, 
             sasa = sasa, compactness = compactness, sses = full_sse_list, median_min_dists = distances)
         self.pre_build_pdbs_summary.append(info)
 
-    def _cal_sasa(self, full_pdb):
-        self.pose = rosetta.core.import_pose.pose_from_file(full_pdb)      
-        sasa = self.sa.calculate(self.pose)
-        #print(sasa)
-        return sasa
+    # def _cal_sasa(self, full_pdb):
+    #     self.pose = rosetta.core.import_pose.pose_from_file(full_pdb)      
+    #     sasa = self.sa.calculate(self.pose)
+    #     #print(sasa)
+    #     return sasa
 
     def _const_prot_loop(self, pdb, full_sse_list, outdir):
         '''
