@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import cdist
-from smallprot import pdbutils, query, cluster_loops, smallprot_config, logger
+from . import pdbutils, cluster_loops, logger
+from ..external import query
 import prody as pr
 
 backbone = ['N', 'CA', 'C', 'O']

@@ -6,7 +6,7 @@ import subprocess
 import qbits
 
 def master_query(pdb_path, targetList, rmsdCut=1., topN=None, 
-                 outfile=None, clobber=False):
+                 outfile=None, clobber=False, outdir = None):
     """Execute a MASTER query for a given PDB file.
 
     Parameters
@@ -38,19 +38,18 @@ def master_query(pdb_path, targetList, rmsdCut=1., topN=None,
             subprocess.run(shlex.split(cmd), stdout=f)
     else:
         subprocess.run(shlex.split(cmd))
+    if not outdir:
+        outdir = 'match_'
     pre, ext = os.path.splitext(pdb_path)
     pds_path = pre + '.pds'
     if topN is not None:
         cmd = ('master --query {} --targetList {} --topN {} --rmsdCut {} '
-               '--seqOut seq.txt --matchOut match.txt').format(pds_path, 
-                                                               targetList,
-                                                               str(topN),
-                                                               str(rmsdCut))
+               '--seqOut seq.txt --matchOut match.txt --structOut {}').format(pds_path, 
+                targetList, str(topN),str(rmsdCut), outdir)
     else:
         cmd = ('master --query {} --targetList {} --rmsdCut {} '
-               '--seqOut seq.txt --matchOut match.txt').format(pds_path, 
-                                                               targetList, 
-                                                               str(rmsdCut))
+               '--seqOut seq.txt --matchOut match.txt --structOut {}').format(pds_path, 
+                                                               targetList, str(rmsdCut), outdir)
     # make sure the same query has not been made
     parent_seed = None
     parent_dir = os.path.dirname(pdb_dir)

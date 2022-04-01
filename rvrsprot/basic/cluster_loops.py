@@ -243,7 +243,7 @@ def listdir_mac(path):
 ##########
 ##########
 
-def run_cluster(path, log, loop_query_win, outfile=None):
+def run_cluster(path, log, lo_query_len, rmsd_cutoff = 1.0, outfile=None):
     if outfile:
         orig_out = sys.stdout
         sys.stdout = open(outfile, 'a')
@@ -258,10 +258,10 @@ def run_cluster(path, log, loop_query_win, outfile=None):
                   if f[-3:] == 'pdb']:
             pdb = pr.parsePDB(path + loopdir + '/' + f)
             ca_sel = pdb.select('name CA')
-            if len(ca_sel) == 2*loop_query_win + loopsize:
+            if len(ca_sel) == lo_query_len + loopsize:
                 pdbs.append(pdb)
 
-        kwargs = dict(rmsd_cutoff=1.0, 
+        kwargs = dict(rmsd_cutoff=rmsd_cutoff, 
                       cluster_tag='_loop_' + str(loopsize),
                       clusters_outdir=path + loopdir + '/clusters/',
                       selection='name CA')

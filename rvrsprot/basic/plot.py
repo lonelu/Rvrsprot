@@ -1,11 +1,12 @@
 import logomaker
 import matplotlib.pyplot as plt
+import prody as pr
 from fpdf import FPDF
 import pandas as pd
 import numpy as np
 import qbits
-from smallprot import constant
-from smallprot import extract_master
+from . import constant
+from ..external import extract_master
 import os
 
 
@@ -24,9 +25,10 @@ def _plot_log(fig, ax, seqs):
     xs = list(range(1, len(df)+1))
     ax.set_xticks(range(len(xs)))
     ax.set_xticklabels(xs)
+    return df
 
 
-def _plot_hydro(fig, ax, seqs, seqlen, loop_query_win):
+def _plot_hydro(fig, ax, seqs, seqlen, lop_query_len):
     all_hydro=[]
     for seq in seqs:
         hydro = [constant.hydro_dict[res] for res in seq]
@@ -35,7 +37,7 @@ def _plot_hydro(fig, ax, seqs, seqlen, loop_query_win):
     means = np.mean(all_hydro, 0)
     sds = np.std(all_hydro, 0)
 
-    x = list(range(1, seqlen + 2*loop_query_win+1))
+    x = list(range(1, seqlen + lop_query_len + 1))
     #You can plot different hydro_scales or all of them.
     #for i in range(len(constant.hydro_scale)):
     i = 0  
@@ -45,7 +47,7 @@ def _plot_hydro(fig, ax, seqs, seqlen, loop_query_win):
     ax.set_xticks(x)
 
 
-def _plot_propensity(fig, ax, seqs, seqlen, loop_query_win):
+def _plot_propensity(filepath, ax, seqs, seqlen, loop_query_win):
 
     all_propen = []
     for seq in seqs:
@@ -112,13 +114,13 @@ def _plot_rmsds(fig, ax, loop_rmsds):
     ax.set_ylabel('Count', size= 12)
 
 
-def _plot_all(filepath, loop_seqs, loop_rmsds, seqlen, loop_query_win, phi, psi, seq):
+def _plot_all(filepath, loop_seqs, loop_rmsds, seqlen, lop_query_len, phi, psi, seq):
     fig, (ax1, ax2, ax3, ax4, ax5) =plt.subplots(5, 1, figsize=(15, 17.5))
     _plot_rmsds(fig, ax1, loop_rmsds)
     _plot_phipsi(fig, ax2, phi, psi, seqlen)
     _plot_table(fig, ax3, seq, phi, psi)
     _plot_log(fig, ax4, loop_seqs)
-    _plot_hydro(fig, ax5, loop_seqs, seqlen, loop_query_win)
+    _plot_hydro(fig, ax5, loop_seqs, seqlen, lop_query_len)
     plt.tight_layout()
     plt.savefig(filepath+'_info.png')
     plt.close()
@@ -141,10 +143,10 @@ def _plot_all(filepath, loop_seqs, loop_rmsds, seqlen, loop_query_win, phi, psi,
     # pdf.output(filepath + '_report.pdf', 'F')
     # #os.remove(filepath + '_.png')
 
-def _plot_contact_map(filepath):
+def _plot_contact_map(file_path):
     pdb_prody = pr.parsePDB(file_path)
     ca = pdb_prody.select('name CA')
     pr.showContactMap(ca, cmap = 'Reds')
-    plt.savefig(filepath[:-4] + '.png')
+    plt.savefig(file_path[:-4] + '.png')
     plt.close()
 

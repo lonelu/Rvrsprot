@@ -1,7 +1,7 @@
 import os
 import prody as pr
 import qbits
-from smallprot import pdbutils
+from . import pdbutils
 
 def cal_phipsi(pdb_path):
     '''

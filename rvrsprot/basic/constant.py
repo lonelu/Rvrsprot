@@ -84,6 +84,6 @@ def read_apble(filepath):
 
 
 
-APBEL_DICT = read_apble(Path(__file__).parent.parent / 'database/APBLE.txt')
+APBEL_DICT = read_apble(Path(__file__).parent.parent / 'constants/APBLE.txt')
             
                 

@@ -40,6 +40,7 @@ select_min_rmsd_pdb: if True, the program will build complete structure with the
 cluster_count_cut: if a loop candidate with clustered number smaller than 20, they won't be selected for complete structure building.
 loop_distance_cut: distance limitation for the loops at the same side. For example, for a 4 helix bundle looped in order A-B-C-D, loop_AB and loop_CD is at the same side and their distance should be less than 16. 
 construct_keep: keep == 0, keep min; keep == -1, keep loop sequence as much as possible; keep == 1, keep seed sequence as much as possible. 
+
 ### Start to run the script.
 Activite the python conda environment.
 > conda activate env_smallprot

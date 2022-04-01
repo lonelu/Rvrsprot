@@ -19,8 +19,40 @@ from itertools import product, permutations
 
 import qbits
 
-from smallprot import pdbutils, query, cluster_loops, smallprot_config
-from smallprot import logger, peputils, constant, plot, extract_master, struct_analysis
+from rvrsprot.basic import pdbutils, cluster_loops, logger, peputils, constant, plot, struct_analysis
+from rvrsprot.external import query, extract_master
+from rvrsprot import smallprot_config
+
+
+def loop_search_query_search(loop_workdir, loop_query, loop_outfile, loop_range, loop_target_list, rmsdCut, master_query_loop_top, seed_pdb_len = 0):
+    """find loops with MASTER"""
+    gapLen = str(loop_range[0]) + '-' + str(loop_range[1])
+    if not os.path.exists(loop_outfile):
+        print('Querying MASTER for loops of length {} to {}.'.format(
+                str(loop_range[0]), str(loop_range[1])))
+        query.master_query_loop(loop_query, loop_target_list, 
+                                rmsdCut=rmsdCut, topN=master_query_loop_top,
+                                gapLen=gapLen, outdir=loop_workdir, 
+                                outfile=loop_outfile)
+    clusters_exist = True
+    loop_workdir_paths = os.listdir(loop_workdir)
+    print('Sorting loop PDBs by loop length.')
+    # sort PDBs into directories by loop length
+    for path in loop_workdir_paths:
+        if '.pdb' in path and 'loop_query' not in path:
+            with open(loop_workdir + '/' + path, 'r') as f:
+                res_ids = set([int(line[23:26]) for line in f.read().split('\n') if line[:4] == 'ATOM'])
+                # subtract query ends from loop length
+                #l = len(res_ids) - 2*para.loop_query_win
+                l = len(res_ids) - seed_pdb_len
+            l_dir = loop_workdir + '/' + str(l)
+            # create a directory for the loop length if necessary
+            if str(l) not in loop_workdir_paths:
+                os.mkdir(l_dir)
+                loop_workdir_paths.append(str(l))
+            os.rename(loop_workdir + '/' + path, l_dir + '/' + os.path.basename(path))
+    return clusters_exist 
+
 
 @dataclass
 class Struct_info:
@@ -305,8 +337,10 @@ class Loop_sse:
             clusters_exist = self._loop_search_query_search(loop_workdir, loop_query, loop_outfile, loop_range)
             # cluster loops if the clusters do not already exist
             if not clusters_exist:
-                cluster_loops.run_cluster(loop_workdir + '/', self.log, self.para.loop_query_win, outfile=loop_outfile)
+                cluster_loops.run_cluster(loop_workdir + '/', self.log, self.para.loop_query_win*2, outfile=loop_outfile)
 
+
+    ### deprecated
     def _loop_search_query_search(self, loop_workdir, loop_query, loop_outfile, loop_range):
         """find loops with MASTER"""
         gapLen = str(loop_range[0]) + '-' + str(loop_range[1])
@@ -341,6 +375,7 @@ class Loop_sse:
                     os.mkdir(clusters_path)
                     clusters_exist = False
         return clusters_exist
+
 
     def _get_top_cluster_summary(self, workdir, n_chains, cluster_count_cut, loop_range):
         '''
@@ -378,7 +413,7 @@ class Loop_sse:
                                 shutil.copyfileobj(f_in, f_out)                  
 
                         phi, psi, _sel_seq = struct_analysis.cal_phipsi(_cent_pdb)
-                        plot._plot_all(_cent_pdb_workdir + '/' + _cent, loop_seqs, loop_rmsds, l, self.para.loop_query_win, phi, psi, _sel_seq)     
+                        plot._plot_all(_cent_pdb_workdir + '/' + _cent, loop_seqs, loop_rmsds, l, self.para.loop_query_win * 2, phi, psi, _sel_seq)     
 
                     #Add summary                
                     info = Struct_info(trunc_info = loop_workdir.split('/')[-2], loop_info = loop_workdir.split('/')[-1], 
@@ -396,6 +431,7 @@ class Loop_sse:
                     _infos.append(info)      
 
         return _infos
+
 
     def _remove_redundancy(self, cluster_count_cut):
         reduced_order_infos = []
@@ -429,6 +465,7 @@ class Loop_sse:
 
         return reduced_order_infos
 
+
     def _extract_loop_combs(self, reduced_order_infos, n_chains, sat, cluster_count_cut):
         '''
         With all the loops with >= cluster_count_cut. 
@@ -460,6 +497,7 @@ class Loop_sse:
             scores.append(sum([c.clust_num for c in comb]))
         return combs, ps, scores
 
+
     def _check_comb_validity(self, comb, loop_distance_cut = 15):
         """#Currently, if the distance between mid residues of two loops on the same sides should be smaller than a certain number."""
         n_side = comb[0::2]
@@ -476,6 +514,7 @@ class Loop_sse:
                     return False
         return True
  
+
     def _connect_loops_struct(self, _full_sse_list, n_chains, permutation, centroids, keep=1):
         '''
         Put seed sses and loop candidates together and calculate the cut position for each.      

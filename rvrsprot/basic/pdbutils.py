@@ -14,7 +14,7 @@ import prody
 from qbits import convex_hull, pdb, clash
 from itertools import combinations
 
-from smallprot import peputils
+from . import peputils
 
 parser = PDBParser(QUIET=True)
 io = PDBIO()
