@@ -13,6 +13,7 @@ functionalities.rst
 *.zip
 *.gz
 *.tgz
+Rvrsprot.egg-info/
 
 # Others
 data/

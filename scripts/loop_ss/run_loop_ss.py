@@ -1,7 +1,6 @@
 import os
 import sys
 import importlib
-sys.path.append(r'/mnt/e/GitHub_Design/Rvrsprot')
 from rvrsprot.loop import loop_ss
 import datetime 
 
