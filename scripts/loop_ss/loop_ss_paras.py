@@ -1,8 +1,12 @@
+'''
+python /mnt/e/GitHub_Design/Rvrsprot/scripts/loop_ss/run_loop_ss.py /mnt/e/GitHub_Design/Rvrsprot/scripts/loop_ss/loop_ss_paras.py
+'''
+
 import os
 
 workdir = '/mnt/e/DesignData/smallprot_loops/huong/'
-#outdir = 'loop_ss_20220401-100308/'
-outdir = None
+outdir = 'loop_ss_20220401-164040/'
+#outdir = None
 target_file = 'seed.pdb'
 
 
@@ -34,8 +38,8 @@ loop_topo_sels = {
 # }
 
 ### Master search para
-loop_range = [10, 20]
-loop_target_list = '/mnt/e/GitHub_Design/master_db/list'
+loop_range = [4, 18]
+loop_target_list = '/mnt/e/GitHub_Design/master_db/list' # gpu:'/mnt/e/GitHub_Design/master_db/list'
 rmsdCut = 0.6
 master_query_loop_top = 500
 cluster_rmsd = 1.0

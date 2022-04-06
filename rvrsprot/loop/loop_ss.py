@@ -106,7 +106,7 @@ def _get_top_cluster_summary(topo_dir, cluster_count_cut, loop_range, select_min
                 loop_pdbs = os.listdir(subdir)
             except:
                 loop_pdbs = []
-            print(subdir + '---' + str(len(loop_pdbs)))
+            #print(subdir + '---' + str(len(loop_pdbs)))
 
             if len(loop_pdbs) > 1:       
                 loop_rmsds, loop_seqs, loop_pdss = extract_master._get_pdbs_master_info(lo_dir + '/match.txt', lo_dir + '/seq.txt', loop_pdbs)
@@ -118,7 +118,7 @@ def _get_top_cluster_summary(topo_dir, cluster_count_cut, loop_range, select_min
                     _cent_dir = topo_dir + '_cent/'
                     if not os.path.exists(_cent_dir):
                         os.mkdir(_cent_dir)
-                    _cent_name = _lo_dir_name + '_cent_rg_' + str(l)
+                    _cent_name = _lo_dir_name + '_cent_rg_' + str(l) + '_clu_' + str(len(loop_pdbs))
                     _cent_pdb = _cent_dir + _cent_name + '.pdb'
 
                     if select_min_rmsd_pdb:
@@ -165,7 +165,7 @@ def run_loop_ss(outdir, target_file, loop_topo_sels, para):
                 lo_query = lo_dir + name + '.pdb'
                 loop_search_query_search(lo_dir, lo_query, para.loop_range, para.loop_target_list, para.rmsdCut, para.master_query_loop_top, loop_query_len = lo_query_len)
                 log = ''
-                cluster_loops.run_cluster(lo_dir + '/', log, lo_query_len,  para.cluster_rmsd, outfile= lo_dir + 'stdout')
+                cluster_loops.run_cluster(lo_dir + '/', log, lo_query_len,  para.cluster_rmsd , outfile= lo_dir + 'stdout')
 
         _get_top_cluster_summary(topo_dir, para.cluster_count_cut, para.loop_range, para.select_min_rmsd_pdb)
 
