@@ -33,6 +33,7 @@ def loop_search_query_search(loop_workdir, loop_query, loop_range, loop_target_l
     loop_outfile = loop_workdir + '/stdout'
     print('Querying MASTER for loops of length {} to {}.'.format(
             str(loop_range[0]), str(loop_range[1])))
+    #print('Database: {}'.format(loop_target_list))
     query.master_query_loop(loop_query, loop_target_list, 
                             rmsdCut=rmsdCut, topN=master_query_loop_top,
                             gapLen=gapLen, outdir=loop_workdir, 
@@ -40,19 +41,19 @@ def loop_search_query_search(loop_workdir, loop_query, loop_range, loop_target_l
 
     loop_workdir_paths = os.listdir(loop_workdir)
 
-    print('Sorting loop PDBs by loop length.')
+    print('Sorting loop PDBs by loop length.' + loop_workdir)
     # sort PDBs into directories by loop length
     for path in loop_workdir_paths:
-        if '.pdb' in path and 'match' in path:
-            with open(loop_workdir + '/' + path, 'r') as f:
+        if '.pdb' in path and ('match' in path or 'wgap' in path):
+            with open(loop_workdir + path, 'r') as f:
                 res_ids = set([int(line[23:26]) for line in f.read().split('\n') if line[:4] == 'ATOM'])
                 # subtract query ends from loop length
                 l = len(res_ids) - loop_query_len
-            l_dir = loop_workdir + '/' + str(l)
+            l_dir = loop_workdir + str(l)
             # create a directory for the loop length if necessary
-            if str(l) not in loop_workdir_paths:
-                os.mkdir(l_dir)
-                loop_workdir_paths.append(str(l))
+            #print(l_dir)
+            os.makedirs(l_dir, exist_ok= True)
+
             os.rename(loop_workdir + '/' + path, l_dir + '/' + os.path.basename(path))
     return  
 
@@ -115,7 +116,7 @@ def _get_top_cluster_summary(topo_dir, cluster_count_cut, loop_range, select_min
                 #Copy centroid pdb and plot   
                 if len(loop_pdbs) >= cluster_count_cut:
 
-                    _cent_dir = topo_dir + '_cent/'
+                    _cent_dir = topo_dir + '_cent_' + topo_dir.split('/')[-1] + '/'
                     if not os.path.exists(_cent_dir):
                         os.mkdir(_cent_dir)
                     _cent_name = _lo_dir_name + '_cent_rg_' + str(l) + '_clu_' + str(len(loop_pdbs))

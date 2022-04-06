@@ -5,8 +5,8 @@ python /mnt/e/GitHub_Design/Rvrsprot/scripts/loop_ss/run_loop_ss.py /mnt/e/GitHu
 import os
 
 workdir = '/mnt/e/DesignData/smallprot_loops/huong/'
-outdir = 'loop_ss_20220401-164040/'
-#outdir = None
+#outdir = 'loop_ss_20220401-164040/'
+outdir = None
 target_file = 'seed.pdb'
 
 
