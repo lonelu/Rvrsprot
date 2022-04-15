@@ -2,10 +2,12 @@ import os
 import shlex
 import shutil
 import subprocess
-
 import qbits
 
-def master_query(pdb_path, targetList, rmsdCut=1., topN=None, 
+createPDS = os.path.dirname(__file__) + '/createPDS'
+master = os.path.dirname(__file__) + '/master'
+
+def master_query_depre(pdb_path, targetList, rmsdCut=1., topN=None, 
                  outfile=None, clobber=False, outdir = None):
     """Execute a MASTER query for a given PDB file.
 
@@ -32,7 +34,7 @@ def master_query(pdb_path, targetList, rmsdCut=1., topN=None,
         if os.path.exists(pdb_dir + '/match.txt'):
             return
     os.chdir(pdb_dir)
-    cmd = 'createPDS --type query --pdb {}'.format(os.path.basename(pdb_path))
+    cmd = createPDS + ' --type query --pdb {}'.format(os.path.basename(pdb_path))
     if outfile:
         with open(outfile, 'a') as f:
             subprocess.run(shlex.split(cmd), stdout=f)
@@ -43,11 +45,11 @@ def master_query(pdb_path, targetList, rmsdCut=1., topN=None,
     pre, ext = os.path.splitext(pdb_path)
     pds_path = pre + '.pds'
     if topN is not None:
-        cmd = ('master --query {} --targetList {} --topN {} --rmsdCut {} '
+        cmd = (master  +' --query {} --targetList {} --topN {} --rmsdCut {} '
                '--seqOut seq.txt --matchOut match.txt --structOut {}').format(pds_path, 
                 targetList, str(topN),str(rmsdCut), outdir)
     else:
-        cmd = ('master --query {} --targetList {} --rmsdCut {} '
+        cmd = (master + ' --query {} --targetList {} --rmsdCut {} '
                '--seqOut seq.txt --matchOut match.txt --structOut {}').format(pds_path, 
                                                                targetList, str(rmsdCut), outdir)
     # make sure the same query has not been made
@@ -70,6 +72,50 @@ def master_query(pdb_path, targetList, rmsdCut=1., topN=None,
         else:
             subprocess.run(shlex.split(cmd))
     os.chdir(cwd)
+
+
+def master_query(outdir, pdb_path, targetList, rmsdCut=1., topN=None, outfile=None):
+    """Execute a MASTER query for a given PDB file.
+
+    Parameters
+    ----------
+    pdb_path : str
+        Path to PDB file for which to execute the MASTER query.
+    targetList : str
+        Path to file containing paths to PDS files for target structures.
+    rmsdCut : float, optional
+        RMSD threshold at which to permit MASTER matches.
+    topN : int, optional
+        Number of top database hits to include in the output.  If None, 
+        an unlimited number of hits are permitted.
+    outfile : str, optional
+        Path to a file to which MASTER output should be redirected.
+    clobber : bool, optional
+        If True, clobber MASTER output if it already exists.
+    """
+    pds_path = outdir + os.path.basename(pdb_path) + '.pds'
+
+    cmd = createPDS + ' --type query --pdb {} --pds {}'.format(pdb_path, pds_path)
+    if outfile:
+        with open(outfile, 'a') as f:
+            subprocess.run(shlex.split(cmd), stdout=f)
+    else:
+        subprocess.run(shlex.split(cmd))
+    
+    if topN is not None:
+        cmd = (master + ' --query {} --targetList {} --topN {} --rmsdCut {} '
+               '--seqOut {} --matchOut {} --structOut {}').format(pds_path, 
+                targetList, str(topN),str(rmsdCut), outdir + 'seq.txt', outdir + 'match.txt', outdir)
+    else:
+        cmd = (master + ' --query {} --targetList {} --rmsdCut {} '
+               '--seqOut {} --matchOut {} --structOut {}').format(pds_path, 
+                targetList, str(rmsdCut), outdir + 'seq.txt', outdir + 'match.txt', outdir)
+    if outfile:
+        with open(outfile, 'a') as f:
+            subprocess.run(shlex.split(cmd), stdout=f)
+    else:
+        subprocess.run(shlex.split(cmd))
+    return 
 
 
 def master_query_loop(pdb_path, targetList, rmsdCut=1., gapLen=10,  
@@ -98,7 +144,7 @@ def master_query_loop(pdb_path, targetList, rmsdCut=1., gapLen=10,
     pdb_path = os.path.realpath(pdb_path)
     pdb_dir = os.path.dirname(pdb_path)
     os.chdir(pdb_dir)
-    cmd = 'createPDS --type query --pdb {}'.format(os.path.basename(pdb_path))
+    cmd = createPDS + ' --type query --pdb {}'.format(os.path.basename(pdb_path))
     if outfile:
         with open(outfile, 'a') as f:
             subprocess.run(shlex.split(cmd), stdout=f)
@@ -109,14 +155,14 @@ def master_query_loop(pdb_path, targetList, rmsdCut=1., gapLen=10,
     pre, ext = os.path.splitext(pdb_path)
     pds_path = pre + '.pds'
     if topN is not None:
-        cmd = ('master --query {} --targetList {} --topN {} '
+        cmd = (master + ' --query {} --targetList {} --topN {} '
                '--rmsdCut {} --gapLen {} --outType wgap '
                '--matchOut match.txt --seqOut seq.txt '
                '--structOut {}').format(pds_path, targetList, 
                                         str(topN), str(rmsdCut), 
                                         str(gapLen), outdir)
     else:
-        cmd = ('master --query {} --targetList {} '
+        cmd = (master + ' --query {} --targetList {} '
                '--rmsdCut {} --gapLen {} --outType wgap '
                '--matchOut match.txt --seqOut seq.txt '
                '--structOut {}').format(pds_path, targetList, 
@@ -130,7 +176,7 @@ def master_query_loop(pdb_path, targetList, rmsdCut=1., gapLen=10,
     os.chdir(cwd)
 
 
-def qbits_search(query_pdb_path, query_full_pdb_path, chains_dict_path, 
+def qbits_search(query_pdb_path, query_full_pdb_path, query_dir, chains_dict_path, 
                  outdir, window_size=10, rmsd=1.5, top=5, sec_struct=None, 
                  antiparallel=False, min_nbrs=1, contiguous=False):
     """Parse MASTER matches and search for neighbors to generate qbit reps.
@@ -164,7 +210,7 @@ def qbits_search(query_pdb_path, query_full_pdb_path, chains_dict_path,
     """
     query_pdb_path = os.path.realpath(query_pdb_path)
     query_full_pdb_path = os.path.realpath(query_full_pdb_path)
-    query_dir = os.path.dirname(query_pdb_path)
+    #query_dir = os.path.dirname(query_pdb_path)
     match_path = query_dir + '/match.txt'
     seq_path = query_dir + '/seq.txt'
     # parse MASTER matches
