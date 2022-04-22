@@ -211,8 +211,8 @@ def qbits_search(query_pdb_path, query_full_pdb_path, query_dir, chains_dict_pat
     query_pdb_path = os.path.realpath(query_pdb_path)
     query_full_pdb_path = os.path.realpath(query_full_pdb_path)
     #query_dir = os.path.dirname(query_pdb_path)
-    match_path = query_dir + '/match.txt'
-    seq_path = query_dir + '/seq.txt'
+    match_path = query_dir + 'match.txt'
+    seq_path = query_dir + 'seq.txt'
     # parse MASTER matches
     p = qbits.parse.Parse(query_full_pdb_path, query_pdb_path, match_path, 
                           seq_path)

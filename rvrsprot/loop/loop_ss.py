@@ -27,7 +27,7 @@ class Struct_info:
     clust_num_2nd: int = 0
 
 
-def loop_search_query_search(loop_workdir, loop_query, loop_range, loop_target_list, rmsdCut, master_query_loop_top, loop_query_len = 14):
+def loop_search_query_search(loop_workdir, loop_query, loop_range, loop_target_list, rmsdCut, master_query_loop_top, loop_query_len = 14, rm_duplicate = True):
     """find loops with MASTER"""
     gapLen = str(loop_range[0]) + '-' + str(loop_range[1])
     loop_outfile = loop_workdir + '/stdout'
@@ -42,13 +42,22 @@ def loop_search_query_search(loop_workdir, loop_query, loop_range, loop_target_l
     loop_workdir_paths = os.listdir(loop_workdir)
 
     print('Sorting loop PDBs by loop length.' + loop_workdir)
-    # sort PDBs into directories by loop length
+    # sort PDBs into directories by loop length.
+    # rm duplicates.
+    seq_set = set()
     for path in loop_workdir_paths:
         if '.pdb' in path and ('match' in path or 'wgap' in path):
-            with open(loop_workdir + path, 'r') as f:
-                res_ids = set([int(line[23:26]) for line in f.read().split('\n') if line[:4] == 'ATOM'])
-                # subtract query ends from loop length
-                l = len(res_ids) - loop_query_len
+            # with open(loop_workdir + path, 'r') as f:
+            #     res_ids = set([int(line[23:26]) for line in f.read().split('\n') if line[:4] == 'ATOM'])
+            #     # subtract query ends from loop length
+            #     l = len(res_ids) - loop_query_len
+            pdb = pr.parsePDB(loop_workdir + path)
+            seq = ''.join(pdb.select('name CA').getSequence())
+            if rm_duplicate and seq in seq_set:
+                continue
+            seq_set.add(seq)
+
+            l = len(pdb.select('name CA')) - loop_query_len          
             l_dir = loop_workdir + str(l)
             # create a directory for the loop length if necessary
             #print(l_dir)
@@ -164,7 +173,7 @@ def run_loop_ss(outdir, target_file, loop_topo_sels, para):
                 # Extract sel lo.
                 lo_query_len = ext_sel(lo_dir, target, lo)
                 lo_query = lo_dir + name + '.pdb'
-                loop_search_query_search(lo_dir, lo_query, para.loop_range, para.loop_target_list, para.rmsdCut, para.master_query_loop_top, loop_query_len = lo_query_len)
+                loop_search_query_search(lo_dir, lo_query, para.loop_range, para.loop_target_list, para.rmsdCut, para.master_query_loop_top, loop_query_len = lo_query_len, rm_duplicate = para.rm_duplicate)
                 log = ''
                 cluster_loops.run_cluster(lo_dir + '/', log, lo_query_len,  para.cluster_rmsd , outfile= lo_dir + 'stdout')
 
