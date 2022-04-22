@@ -30,7 +30,7 @@ class Struct_info:
 def loop_search_query_search(loop_workdir, loop_query, loop_range, loop_target_list, rmsdCut, master_query_loop_top, loop_query_len = 14, rm_duplicate = True):
     """find loops with MASTER"""
     gapLen = str(loop_range[0]) + '-' + str(loop_range[1])
-    loop_outfile = loop_workdir + '/stdout'
+    loop_outfile = loop_workdir + 'stdout'
     print('Querying MASTER for loops of length {} to {}.'.format(
             str(loop_range[0]), str(loop_range[1])))
     #print('Database: {}'.format(loop_target_list))
@@ -39,13 +39,11 @@ def loop_search_query_search(loop_workdir, loop_query, loop_range, loop_target_l
                             gapLen=gapLen, outdir=loop_workdir, 
                             outfile=loop_outfile)
 
-    loop_workdir_paths = os.listdir(loop_workdir)
-
     print('Sorting loop PDBs by loop length.' + loop_workdir)
     # sort PDBs into directories by loop length.
     # rm duplicates.
-    seq_set = set()
-    for path in loop_workdir_paths:
+    seq_set = dict()
+    for path in os.listdir(loop_workdir):
         if '.pdb' in path and ('match' in path or 'wgap' in path):
             # with open(loop_workdir + path, 'r') as f:
             #     res_ids = set([int(line[23:26]) for line in f.read().split('\n') if line[:4] == 'ATOM'])
@@ -53,17 +51,29 @@ def loop_search_query_search(loop_workdir, loop_query, loop_range, loop_target_l
             #     l = len(res_ids) - loop_query_len
             pdb = pr.parsePDB(loop_workdir + path)
             seq = ''.join(pdb.select('name CA').getSequence())
-            if rm_duplicate and seq in seq_set:
+
+            if seq in seq_set.keys():
+                seq_set[seq].append(path)
+            else:
+                seq_set[seq] = [path]
+
+            if rm_duplicate and len(seq_set[seq]) > 1:
+                os.remove(loop_workdir + path)
                 continue
-            seq_set.add(seq)
 
             l = len(pdb.select('name CA')) - loop_query_len          
             l_dir = loop_workdir + str(l)
             # create a directory for the loop length if necessary
             #print(l_dir)
             os.makedirs(l_dir, exist_ok= True)
+            os.rename(loop_workdir + path, l_dir + '/' + os.path.basename(path))
 
-            os.rename(loop_workdir + '/' + path, l_dir + '/' + os.path.basename(path))
+    ### write duplicate summary.
+    if rm_duplicate:
+        with open(loop_workdir + '_dup_summary.txt', 'w') as f:
+            for k in seq_set.keys():
+                f.write(k + '\t' + '\t'.join(seq_set[k]) + '\n')
+                
     return  
 
 

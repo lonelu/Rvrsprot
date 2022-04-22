@@ -154,7 +154,7 @@ import os
 def prepare_fasta_by_pymol():
 
     workdir = '/mnt/e/DesignData/tm/database/tms_filter3.5/'  
-    
+
     outdir = workdir + 'seq/'
     os.makedirs(outdir, exist_ok=True)
     cmd.cd(outdir)
@@ -165,9 +165,10 @@ def prepare_fasta_by_pymol():
         print(obj)
 
         for ch in cmd.get_chains(obj):
-            if len(ch) >=1:
+            #if len(ch) >=1:
+            if len(ch) < 1:
                 name = obj + '_' + ch
-                cmd.create(name, 'model %s and chain %s' % (obj, ch))
+                cmd.create(name, 'model %s and chain %s and polymer.protein' % (obj, ch))
                 cmd.save(name + '.fasta', name)
                 cmd.delete(name)
         cmd.delete(obj)
