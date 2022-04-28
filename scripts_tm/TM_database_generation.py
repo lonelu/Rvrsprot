@@ -10,7 +10,8 @@ import shutil
 import numpy as np
 from metalprot.basic import utils
 
-
+from pymol import cmd
+import glob
 
 ### Copy selected pdb (resolution <= 3.5) files into a new directory. 
 def sel_pdb_by_resolution():
@@ -25,7 +26,7 @@ def sel_pdb_by_resolution():
 
     protein_info = pd.read_csv(workdir + 'proteins-2022-01-31_filter3.5.csv')
 
-    outdir = workdir + 'tms_filter3.5/'
+    outdir = workdir + 'tms_filter35/'
     os.makedirs(outdir, exist_ok=True)
 
     not_in_db = []
@@ -38,7 +39,7 @@ def sel_pdb_by_resolution():
 
 '''
 ### correctly copy the failed entries.
-not_in_db_cr = ['1e12', '2e74', '3e86', '5e94', '6e59', '7e33', '7e32', '7e26', '7e27', '7e14']
+not_in_db_cr = ['1e12', '7e14']
 for prot in not_in_db_cr:
     if prot + '.pdb' in proteins:
         shutil.copy(workdir + 'tms/' + prot + '.pdb', outdir + prot + '.pdb')
@@ -47,17 +48,80 @@ for prot in not_in_db_cr:
         print('Protein pdb: ' + prot + ' not in database')
 '''
 
+def ext_protein_by_pymol(workdir, outdir):
+    '''
+    There are a few proteins that prody could not read. 
+    '''
+    cmd.cd(outdir)
+    all_files = []
+
+    for _file in glob.glob(os.path.join(workdir, '*.pdb')):
+        all_files.append(_file)
+
+    for _file in all_files:
+        cmd.load(_file)
+        objs = cmd.get_names()
+        
+        obj = objs[0]   ### only the first entry contains protein.
+
+        obj_prot = obj + '_prot'
+        count = cmd.count_atoms('model %s and polymer.protein' % (obj))
+        if count <= 10:
+            print(_file)
+            continue
+
+        cmd.create(obj_prot ,'model %s and polymer.protein' % (obj))
+
+        cmd.save(_file.split('.')[0] + '.pdb', obj_prot)
+        cmd.delete("all")
+    return
+
+#workdir = '/mnt/e/DesignData/tm/database/tms_filter35_prots/'
+#outdir = '/mnt/e/DesignData/tm/database/tms_filter35_prots/'
+#ext_protein_by_pymol(workdir, outdir)
+
 ### Extracting transmembrane domain
 
-def ext_tm_domain(pdb, outdir, zdist = 19):
+def merge_prody_objs(pdbs, title):
+    '''
+    combine vdms into target and mutate all other aa 2 ala or gly for ligand position.
+    '''
+
+    ag = pr.AtomGroup(title)
+    coords = []
+    chids = []
+    names = []
+    resnames = []
+    resnums = []
+
+    for c in pdbs:
+        coords.extend(c.getCoords())
+        chids.extend(c.getChids())
+        names.extend(c.getNames())
+        resnames.extend(c.getResnames())
+        resnums.extend(c.getResnums())
+
+    ag.setCoords(np.array(coords))
+    ag.setChids(chids)
+    ag.setNames(names)
+    ag.setResnames(resnames)
+    ag.setResnums(resnums)
+    return ag
+
+def ext_tm_domain(pdb, outdir, zdist = 18):
     '''
     The function is used to extract transmembrane domain of pdb from OPM database.
     zdist is the z axis for the tm domain cutoff.
     '''
+    print('Extract tm domain ' + pdb.getTitle())
     chid_resns = {}  
     for chid in np.unique(pdb.select('protein').getChids()):
-        ind_sel = np.unique(pdb.select('protein and chid ' + chid + ' and name CA and -' + str(zdist) + '<=z<=' + str(zdist)).getResindices())
-        ind_sel = np.unique(pdb.select('protein and name CA and -' + str(zdist) + '<=z<=' + str(zdist)).getResnums())
+        #ind_sel = np.unique(pdb.select('protein and chid ' + chid + ' and name CA and -' + str(zdist) + '<=z<=' + str(zdist)).getResindices())
+        _sel = pdb.select('protein and chid ' + chid + ' and name CA and -' + str(zdist) + '<=z<=' + str(zdist))
+        if _sel is None or len(_sel) <= 0:
+            print('The chid is empty ' + chid)
+            continue
+        ind_sel = np.unique(_sel.getResnums())
         
         #TO DO: rm  len < 7
         ind_list = []
@@ -88,28 +152,38 @@ def ext_tm_domain(pdb, outdir, zdist = 19):
 
     if len(chid_resns) <= 0:
         return False
-
+    _pdbs = []
     for chid in chid_resns.keys():
-        pdb_sel = pdb.select('protein and chid ' + chid + ' and resnum ' + ' '.join([str(x) for x in chid_resns[chid]]))       
+        pdb_sel = pdb.select('protein and chid ' + chid + ' and resnum ' + ' '.join([str(x) for x in chid_resns[chid]])).copy().toAtomGroup()       
         if not pdb_sel.select('name CA and -5<=z<=5'):
-            return False
-        pr.writePDB(outdir + pdb.getTitle() + '_' + chid, pdb_sel)
+            continue
+        _pdbs.append(pdb_sel)
+        
+    if len(_pdbs) <= 0:
+        return False
+    _pdb = merge_prody_objs(_pdbs, title=pdb.getTitle())
+
+    pr.writePDB(outdir + _pdb.getTitle(), _pdb)
     return True
 
 
 def run():
     workdir = '/mnt/e/DesignData/tm/database/'
-    outdir = workdir + 'tms_filter3.5_tmdomain2/'
+    outdir = workdir + 'tms_filter35_tmdomain/'
     os.makedirs(outdir, exist_ok=True)
+    files = []
+    for file in os.listdir(workdir + 'tms_filter35_prots/'):
+        if '.pdb' not in file:
+            continue
+        files.append(file)
 
     pdbs_no_tmdomain = []
     failed = []
-    for file in os.listdir(workdir + 'tms_filter3.5/'):
-        if '.pdb' not in file:
-            continue
+
+    for file in files:
         try:
-            pdb = pr.parsePDB(workdir + 'tms_filter3.5/' + file)
-            x = ext_tm_domain(pdb, outdir, zdist=19)
+            pdb = pr.parsePDB(workdir + 'tms_filter35_prots/' + file)
+            x = ext_tm_domain(pdb, outdir, zdist=18)
             if not x:
                 pdbs_no_tmdomain.append(file)
         except:
@@ -120,57 +194,19 @@ def run():
 
     with open(outdir + '_notmdomain.txt' , 'w') as f:
         f.write('\n'.join(pdbs_no_tmdomain))
+    return
+
+def ext_tm_domain_by_pymol():
+    '''
+    There are a few proteins that prody could not read. 
+    Not implemented.
+    '''
+    return
+
+'''
+python /mnt/e/GitHub_Design/Rvrsprot/scripts_tm/TM_database_generation.py
+'''
+if __name__=='__main__':
+    print('run main function.')
+    run()
     
-
-def prepare_fasta():
-    '''
-    prepare fasta file of each chain each tm protein.
-    '''
-    workdir = '/mnt/e/DesignData/tm/database/'
-    pdbs = []
-    failed = []
-    for file in os.listdir(workdir + 'tms_filter3.5/'):
-        if '.pdb' not in file:
-            continue
-        try:
-            pdb = pr.parsePDB(workdir + 'tms_filter3.5/' + file)
-            pdbs.append(pdb)
-
-        except:
-            failed.append(file)
-
-    with open(workdir + 'allseq.fasta', 'w') as f:
-        for pdb in pdbs:
-            for chid in pdb.select('protein').getChids():
-                c = pdb.select('protein and chid ' + chid)
-                f.write('>' + pdb.getTitle() + '_' + chid + '\n')
-                f.write(c.select('name CA').getSequence() + '\n')
-
-from pymol import cmd
-import glob
-import os
-
-
-def prepare_fasta_by_pymol():
-
-    workdir = '/mnt/e/DesignData/tm/database/tms_filter3.5/'  
-
-    outdir = workdir + 'seq/'
-    os.makedirs(outdir, exist_ok=True)
-    cmd.cd(outdir)
-
-    for _file in glob.glob(os.path.join(workdir, '*.pdb')):
-        cmd.load(_file)
-        obj = cmd.get_names()[0]
-        print(obj)
-
-        for ch in cmd.get_chains(obj):
-            #if len(ch) >=1:
-            if len(ch) < 1:
-                name = obj + '_' + ch
-                cmd.create(name, 'model %s and chain %s and polymer.protein' % (obj, ch))
-                cmd.save(name + '.fasta', name)
-                cmd.delete(name)
-        cmd.delete(obj)
-        
-
