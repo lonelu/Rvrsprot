@@ -77,7 +77,7 @@ def vdm_add_helix(df_vdm, CG, rota, probe_name, helix, helix_resind, helix_cg = 
     tf = pr.calcTransformation(_helix.select('resindex ' + str(helix_resind) + ' and name N CA C'), vdm.select('chid X and resnum 10 and name N CA C'))
     tf.apply(_helix)
     ind_vdm_dict = {helix_resind: vdm}
-    title = 'h_' + str(CG) + '_' + str(rota) + '_' + str(probe_name)
+    title = str(CG) + '_' + str(rota) + '_' + str(probe_name) + '_sc_' + str(round(vdm_pd['C_score_ABPLE_A'].iloc[0], 1))
     #print(ind_vdm_dict)
     if search_lig_indep.clash_filter_protein_single(_helix, helix_resind + 1, vdm):
         #print('Clash '+ title)
@@ -116,8 +116,8 @@ def vdm_cg_add_helix(vdm, vdm_cg_sel, helix_cg, helix_cg_sel):
     tf.apply(_helix_cg)
     return _helix_cg
 
-def generate_vdm2H(outdir, path_to_database, cg, aa, helix_path, helix_resind, helix_cg_path, helix_cg_sel, vdm_cg_sel):
-    
+def generate_vdm2H(path_to_database, cg, aa, helix_path, helix_resind, helix_cg_path, helix_cg_sel, vdm_cg_sel):
+    ags = []
     df_vdm = search_lig_indep.load_old_vdm(path_to_database, cg, aa)
     df_vdm_f = search_lig_indep.filter_db(df_vdm, use_enriched = True, use_abple = True, abple = 'A')
     df_vdm_rep = df_vdm_f[['CG', 'rota', 'probe_name']].drop_duplicates()
@@ -136,6 +136,6 @@ def generate_vdm2H(outdir, path_to_database, cg, aa, helix_path, helix_resind, h
         _probe_name = df_vdm_rep.iloc[i]['probe_name']
         ag = vdm_add_helix(df_vdm_f, _cg, _rota, _probe_name, helix, helix_resind, _helix_cg)
         if ag:
-            pr.writePDB(outdir + ag.getTitle(), ag)
-    return 
+            ags.append(ag)
+    return ags
 

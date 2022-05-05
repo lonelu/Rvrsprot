@@ -11,12 +11,12 @@ def vdm_db_key(path_to_database):
         for file in os.listdir(path_to_database + folder):
             if not os.path.isfile(path_to_database + folder + '/' + file):
                 continue
-            cg_aa_lists.append((folder, file))
+            cg_aa_lists.append((folder, file.split('.')[0]))
     return cg_aa_lists
 
 
 def generate_rvdm():
-    ind = sys.argv[1]-1
+    ind = int(sys.argv[1])-1
     #path_to_database='/mnt/e/DesignData/Combs/Combs2_database/vdMs/'
     path_to_database='/wynton/home/degradolab/lonelu/GitHub_Design/Combs2_library/vdMs/'
     cg_aa_lists = vdm_db_key(path_to_database)

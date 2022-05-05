@@ -6,10 +6,10 @@
 #$ -cwd
 #$ -r y
 #$ -j y
-#$ -l mem_free=16G
+#$ -l mem_free=48G
 #$ -l hostname="qb3*&!qb3-ad*&!*gpu*"
 #$ -l h_rt=48:00:00
-#$ -t 1-355
+#$ -t 1-4
 
 # Anything under here can be a bash script
 
@@ -27,7 +27,7 @@ conda activate env_conda
 export OMP_NUM_THREADS=1
 
 #python generate_vdms.py $SGE_TASK_ID
-python generate_vdms.py $SGE_TASK_ID
+python gss_std_rev-vdm_master.py $SGE_TASK_ID
 
 qstat -j $JOB_ID                                  # This is useful for debugging and usage purposes,
                                                   # e.g. "did my job exceed its memory request?"

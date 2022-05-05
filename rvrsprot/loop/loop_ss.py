@@ -162,7 +162,7 @@ def _get_top_cluster_summary(topo_dir, cluster_count_cut, loop_range, select_min
     return _infos
 
 def run_loop_ss(outdir, target_file, loop_topo_sels, para):
-     
+    os.makedirs(outdir, exist_ok=True)
     target = pr.parsePDB(target_file)
 
     for topo in loop_topo_sels.keys():
