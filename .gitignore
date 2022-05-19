@@ -4,7 +4,8 @@ test/
 tutorials/.ipynb_checkpoints
 tutorials/output
 functionalities.rst
-
+*/__pycache__/
+*/*/__pycache__/
 
 # Docs
 /docs/_build/

@@ -7,18 +7,21 @@ def _get_seq_rmsd(seqfile):
     all_seqs = []
     all_rmsds = []
     for line in lines:
-        if len(line) > 0:
-            seq =[]
-            for res in line.split(' '):
-                if res.replace('.','',1).isdigit():
-                    all_rmsds.append(float(res))
-                if len(res) == 3 and res[0].isalpha():
-                    seq.append(res)
-                elif len(res) == 4 and res[0] == '[':
-                    seq.append(res[1:])
-                elif len(res) == 4 and res[-1] == ']':
-                    seq.append(res[:-1])
-            all_seqs.append(seq)
+        if len(line) <= 0:
+            continue
+        seq =[]
+        for res in line.split(' '):
+            if len(res) <= 0:
+                continue
+            if res.replace('.','',1).isdigit() or res[0].isdigit():
+                all_rmsds.append(float(res))
+            if len(res) == 3 and res[0].isalpha():
+                seq.append(res)
+            elif len(res) == 4 and res[0] == '[':
+                seq.append(res[1:])
+            elif len(res) == 4 and res[-1] == ']':
+                seq.append(res[:-1])
+        all_seqs.append(seq)
     return all_seqs, all_rmsds
 
 def _get_loop_candidate_seqs_one_letter(seqs):

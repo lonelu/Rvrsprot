@@ -75,9 +75,9 @@ def generate_rvdm2C2(z_fix_dir, rvdmH_dir, lig, outdir):
     return 
 
 
-workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c2/'
+workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c2_coil/'
 z_fix_dir = workdir + '_z_fix_H/'
-rvdmH_dir = workdir + 'std_rots_rvdm/'
+rvdmH_dir = workdir + '_z_fix_rvdm/'
 outdir = workdir + '_z_fix_c2/'
 lig = pr.parsePDB(workdir + 'Ligand.pdb')
 generate_rvdm2C2(z_fix_dir, rvdmH_dir, lig, outdir)

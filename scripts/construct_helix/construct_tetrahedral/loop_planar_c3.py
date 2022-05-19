@@ -16,6 +16,7 @@ class para:
             # Toplogy
             'ABC_frt' : {
                 'A-B': [('A', 8, 2, 'B', 8, 2)], # Chain A loop B. [(A, pos, +-len, B, pos, +-len)]
+                'A-B': [('A', 8, 2, 'C', 8, 2)],
             },
         }
 

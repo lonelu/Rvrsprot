@@ -4,7 +4,6 @@ Keep the mvdmH is z-fixed.
 z-fix is the helix is in the same direction with z-axis.
 '''
 
-from matplotlib.pyplot import contour
 import prody as pr
 import os
 from scipy.spatial.transform import Rotation
@@ -45,7 +44,7 @@ def generate_z_constrained_helix(helix_std, vdm, imido_rot_dir, helix_std_outdir
             continue
         angle, angle_zy, angle_zx = calc_z_direction(helix_std_cp)
         print('angle: {}, angle_zy: {}'.format(angle, angle_zy))
-        if ( angle < 30 and (angle_zy <10 or angle_zy > 170)) or (angle > 150 and (angle_zy <10 or angle_zy > 170)):
+        if ( angle < 30 and (angle_zy <20 or angle_zy > 160)) or (angle > 150 and (angle_zy <20 or angle_zy > 160)):
             ind_vdm_dict = {7:vdm_cp}
             title = vdm.getTitle() + '_' + x.split('.')[0] + '_a_' + str(round(angle, 0)) + '_azy_' + str(round(angle_zy, 0))
             # There is two ways to add Metal, we can add the original ZN or add ZN at [0, 0, 0]
@@ -74,11 +73,11 @@ def generate_z_constrained_all_helixs(helix_std, vdm_dir, imido_rot_dir, helix_s
     return vdm_ND1s
 
 
-workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c2/'
-helix_std = pr.parsePDB(workdir + '15mer_ALA.pdb')
+workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c2_coil/'
+helix_std = pr.parsePDB(workdir + 'CC_15-Mer.pdb')
 
 vdm_dir = '/mnt/e/DesignData/ligands/ZN_rcsb_datesplit/20211013/20211015_AAext3/AAA_H_vdms/'
-imido_rot_dir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c2/std_rots/'
+imido_rot_dir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c2_coil/std_rots/'
 helix_std_outdir = workdir + '_c2_z_fix/'
 
 vdm_ND1s = generate_z_constrained_all_helixs(helix_std, vdm_dir, imido_rot_dir, helix_std_outdir)

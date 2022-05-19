@@ -65,7 +65,7 @@ def filter_rvdm_for_special_his(path_to_database, cg, aa, helix, helix_resind, v
                 continue
             angle, angle_zy, angle_zx = calc_z_direction(ag, sel = 'resindex 0 14 and name CA')
             #print('angle: {}, angle_zx: {}'.format(angle, angle_zx))
-            if ( angle < 30 and (angle_zx <10 or angle_zx > 170)) or (angle > 150 and (angle_zx <10 or angle_zx > 170)):
+            if ( angle < 30 and (angle_zx <20 or angle_zx > 160)) or (angle > 150 and (angle_zx <20 or angle_zx > 160)):
                 pr.writePDB(outdir + aa + '_' + ag.getTitle(), ag)
     return
 
@@ -84,13 +84,13 @@ def generate_std_rots_rvdm(outdir, std_rots_dir, path_to_database, cg, aa, helix
         filter_rvdm_for_special_his(path_to_database, cg, aa, helix, helix_resind, vdm_cg_sel, std_cp, _outdir)
     return
 
-workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c2/'
+workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c2_coil/'
 
 path_to_database='/mnt/e/DesignData/ligands/LigandBB/_reverse_design/_rvrs_vdm/vdMs/'
 cg = 'hid'
 
 vdm_cg_sel = 'chid Y and name CG ND1 CD2 CE1 NE2'
-helix_path =  '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c2/15mer_ALA.pdb'
+helix_path =  '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c2_coil/CC_15-Mer.pdb'
 helix_resind = 7
 
 outdir = workdir + 'std_rots_rvdm/'
