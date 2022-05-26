@@ -63,7 +63,7 @@ def place_vdm(target, pvdm_dir, outdir):
     for file in os.listdir(pvdm_dir):
         if not '.pdb' in file:
             continue
-        if float(file.split('_')[4][0:-4]) < -1.0:
+        if float(file.split('_')[4]) < -1.0:
                 continue
         pvdms.append(pr.parsePDB(pvdm_dir + file))
     pvdm0 = pvdms[0]
@@ -113,6 +113,15 @@ def main0():
     place_vdm(target, pvdm_dir, outdir)
     return 
 
+def main1():
+    workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/SamM/new_bb/'
+    target = pr.parsePDB(workdir + '00012_16_pose219.pdb')
+
+    pvdm_dir = workdir + 'porphyrin_his_vdm/'
+    outdir = workdir + '00012_16_pose219_new/'
+    place_vdm(target, pvdm_dir, outdir)
+    return 
+
 def main():
     workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/SamM/'
     indir = workdir + 'new_bb/'
@@ -126,4 +135,4 @@ def main():
     return
 
 if __name__=='__main__':
-    main()
+    main1()

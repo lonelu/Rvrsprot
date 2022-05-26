@@ -82,10 +82,10 @@ def ext_sel(dir, target, lo):
     lo = ('A', 21, 3, 'B', 4, 3)
     # Chain A loop B. [(A, pos, +-len, B, pos, +-len)]
     '''
-    resnum_a = list(range(lo[1] - lo[2], lo[1] + lo[2] + 1, 1))
+    resnum_a = list(range(lo[1],  lo[2] + 1, 1))
     a = target.select('chid ' + lo[0] + ' and resnum ' + ' '.join([str(x) for x in resnum_a]))
 
-    resnum_b = list(range(lo[4] - lo[5], lo[4] + lo[5] + 1, 1))
+    resnum_b = list(range(lo[4], lo[5] + 1, 1))
     b = target.select('chid ' + lo[3] + ' and resnum ' + ' '.join([str(x) for x in resnum_b]))
 
     ab = a + b
@@ -101,8 +101,8 @@ def ext_lo_query_len(lo_name):
     lo = ('A', 21, 3, 'B', 4, 3)
     '''
     lo = lo_name.split('-')
-    resnum_a = list(range(int(lo[1]) - int(lo[2]), int(lo[1]) + int(lo[2]) + 1, 1))
-    resnum_b = list(range(int(lo[4]) - int(lo[5]), int(lo[4]) + int(lo[5]) + 1, 1))
+    resnum_a = list(range(int(lo[1]), int(lo[2]) + 1, 1))
+    resnum_b = list(range(int(lo[4]), int(lo[5]) + 1, 1))
     lo_query_len = len(resnum_a) + len(resnum_b)
     return lo_query_len
 

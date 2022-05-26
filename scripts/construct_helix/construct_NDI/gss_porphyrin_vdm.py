@@ -30,7 +30,7 @@ dist = pr.calcDistance(porphyrin.select('name MN1')[0], porphyrin.select('name C
 pr.calcTransformation(porphyrin.select('name C5 C10 MN1'), np.array([[0, 0, dist], [0, dist, 0], [0, 0, 0]])).apply(porphyrin)
 
 
-vdm_dir = '/mnt/e/DesignData/ligands/ZN_rcsb_datesplit/20211013/20211015_AAext3/AAA_H_vdms/'
+vdm_dir = '/mnt/e/DesignData/ligands/ZN_rcsb_datesplit/20211013/20211015_AAext3/AAA_H_vdms_name/'
 outdir = workdir + 'porphyrin_his_vdm/'
 generate_porphyrin_vdm(vdm_dir, outdir, std, porphyrin)
 

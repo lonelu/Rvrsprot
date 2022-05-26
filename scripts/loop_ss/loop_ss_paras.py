@@ -32,7 +32,7 @@ target_file = 'seed.pdb'
 loop_topo_sels = {
     # Toplogy
     'ABC_frt' : {
-        'A-B': [('A', 21, 3, 'B', 4, 3)], # Chain A loop B. [(A, pos, +-len, B, pos, +-len)]
+        'A-B': [('A', 18, 24, 'B', 1, 7)], # Chain A loop B. [(A, pos, +-len, B, pos, +-len)]
     },
 }
 
