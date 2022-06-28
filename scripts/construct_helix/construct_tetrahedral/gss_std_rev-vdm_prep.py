@@ -290,16 +290,16 @@ def generate_2vdm_combination_in_tetrahedralgeo(workdir, outdir_name, helix_std_
     os.makedirs(helix_noclash_outdir, exist_ok=True)
 
     for i, j in permutations(range(120), 2):
-        A = A_s[i].select('protein and heavy')
+        A = A_s[i].select('heavy')
         B = B_s[j].select('protein and heavy')
 
-        if clash(A.getCoords(), B.getCoords()):
+        if clash(A.select('protein').getCoords(), B.getCoords()):
             continue
 
         title = 'A_'  + str(i) + '_B_' + str(j)
         #title = A.getTitle() + '_' + B.getTitle()
         ABC = pr.AtomGroup(title)
-        aa = A_s[i].select('resnum 5 6 7 8 9 10 11').toAtomGroup() 
+        aa = A_s[i].select('resnum 5 6 7 8 9 10 11 or name ZN').toAtomGroup() 
         ba = B_s[j].select('resnum 5 6 7 8 9 10 11').toAtomGroup()
         ba.setChids(['B' for i in range(len(ba))])
 
@@ -308,18 +308,18 @@ def generate_2vdm_combination_in_tetrahedralgeo(workdir, outdir_name, helix_std_
         pr.writePDB(helix_noclash_outdir + title + '.pdb', ABC) 
     return
 
-workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/'
+workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c3/'
 
-generate_2vdm_combination_in_tetrahedralgeo(workdir, 'helix_noclash_0-0_vdm/', helix_std_dir1 = workdir + 'helix_std_rots_vdmclu0/', helix_std_dir2 = workdir + 'helix_std_rots_vdmclu0/')
+generate_2vdm_combination_in_tetrahedralgeo(workdir, 'c3_pair/helix_noclash_0-0_vdm/', helix_std_dir1 = workdir + 'helix_std_rots_vdmclu0/', helix_std_dir2 = workdir + 'helix_std_rots_vdmclu0/')
 
-generate_2vdm_combination_in_tetrahedralgeo(workdir, 'helix_noclash_0-1_vdm/', helix_std_dir1 = workdir + 'helix_std_rots_vdmclu0/', helix_std_dir2 = workdir + 'helix_std_rots_vdmclu1/')
+generate_2vdm_combination_in_tetrahedralgeo(workdir, 'c3_pair/helix_noclash_0-1_vdm/', helix_std_dir1 = workdir + 'helix_std_rots_vdmclu0/', helix_std_dir2 = workdir + 'helix_std_rots_vdmclu1/')
 
-generate_2vdm_combination_in_tetrahedralgeo(workdir, 'helix_noclash_1-1_vdm/', helix_std_dir1 = workdir + 'helix_std_rots_vdmclu1/', helix_std_dir2 = workdir + 'helix_std_rots_vdmclu1/')
+generate_2vdm_combination_in_tetrahedralgeo(workdir, 'c3_pair/helix_noclash_1-1_vdm/', helix_std_dir1 = workdir + 'helix_std_rots_vdmclu1/', helix_std_dir2 = workdir + 'helix_std_rots_vdmclu1/')
 
 ### Cluster the 2 vdm_combination and use the centroid for master search.
 
 
-workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/'
+workdir = '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/c3/c3_pair/'
 
 cluster_and_extract_centroid(workdir + 'helix_noclash_0-0_vdm/', workdir + 'helix_noclash_0-0_vdm_clu/', workdir + 'helix_noclash_0-0_vdm_cent/', 'v0-0_', rmsd = 0.75, len_sel = 14, align_sel = 'name CA')
 cluster_and_extract_centroid(workdir + 'helix_noclash_0-1_vdm/', workdir + 'helix_noclash_0-1_vdm_clu/', workdir + 'helix_noclash_0-1_vdm_cent/', 'v0-1_', rmsd = 0.75, len_sel = 14, align_sel = 'name CA')

@@ -11,6 +11,8 @@ import prody as pr
 
 from dataclasses import dataclass
 
+from metalprot.basic import prody_ext
+
 from ..basic import cluster_loops, plot, struct_analysis
 from ..external import query, extract_master
 
@@ -79,8 +81,8 @@ def loop_search_query_search(loop_workdir, loop_query, loop_range, loop_target_l
 
 def ext_sel(dir, target, lo):
     '''
-    lo = ('A', 21, 3, 'B', 4, 3)
-    # Chain A loop B. [(A, pos, +-len, B, pos, +-len)]
+    lo = ('A', 18, 24, 'B', 1, 7)
+    # Chain A loop B. [(A, pos1, pos2, B, pos1, pos2)]
     '''
     resnum_a = list(range(lo[1],  lo[2] + 1, 1))
     a = target.select('chid ' + lo[0] + ' and resnum ' + ' '.join([str(x) for x in resnum_a]))
@@ -88,9 +90,10 @@ def ext_sel(dir, target, lo):
     resnum_b = list(range(lo[4], lo[5] + 1, 1))
     b = target.select('chid ' + lo[3] + ' and resnum ' + ' '.join([str(x) for x in resnum_b]))
 
-    ab = a + b
     name = '-'.join([str(x) for x in lo])
-    pr.writePDB(dir + name, ab)
+    ab = prody_ext.combine_ags([a, b], title = name, ABCchids=['A', 'B'])
+
+    pr.writePDB(dir + name + '.pdb', ab)
 
     lo_query_len = len(resnum_a) + len(resnum_b)
     return lo_query_len
@@ -98,7 +101,7 @@ def ext_sel(dir, target, lo):
 
 def ext_lo_query_len(lo_name):
     '''
-    lo = ('A', 21, 3, 'B', 4, 3)
+    lo = ('A', 18, 24, 'B', 1, 7)
     '''
     lo = lo_name.split('-')
     resnum_a = list(range(int(lo[1]), int(lo[2]) + 1, 1))
