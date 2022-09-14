@@ -91,7 +91,7 @@ def ext_sel(dir, target, lo):
     b = target.select('chid ' + lo[3] + ' and resnum ' + ' '.join([str(x) for x in resnum_b]))
 
     name = '-'.join([str(x) for x in lo])
-    ab = prody_ext.combine_ags([a, b], title = name, ABCchids=['A', 'B'])
+    ab = prody_ext.combine_ags_into_one_chain([a, b], title = name)
 
     pr.writePDB(dir + name + '.pdb', ab)
 

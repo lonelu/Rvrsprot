@@ -116,11 +116,26 @@ def _plot_rmsds(fig, ax, loop_rmsds):
 
 def _plot_all(filepath, loop_seqs, loop_rmsds, seqlen, lop_query_len, phi, psi, seq):
     fig, (ax1, ax2, ax3, ax4, ax5) =plt.subplots(5, 1, figsize=(15, 17.5))
-    _plot_rmsds(fig, ax1, loop_rmsds)
-    _plot_phipsi(fig, ax2, phi, psi, seqlen)
-    _plot_table(fig, ax3, seq, phi, psi)
-    _plot_log(fig, ax4, loop_seqs)
-    _plot_hydro(fig, ax5, loop_seqs, seqlen, lop_query_len)
+    try:
+        _plot_rmsds(fig, ax1, loop_rmsds)
+    except:
+        print('fail _plot_rmsds')
+    try:
+        _plot_phipsi(fig, ax2, phi, psi, seqlen)
+    except:
+        print('fail _plot_phipsi')
+    try:
+        _plot_table(fig, ax3, seq, phi, psi)
+    except:
+        print('fail _plot_phipsi')
+    try:      
+        _plot_log(fig, ax4, loop_seqs)
+    except:
+        print('fail _plot_log')
+    try:
+        _plot_hydro(fig, ax5, loop_seqs, seqlen, lop_query_len)
+    except:
+        print('fail _plot_hydro')  
     plt.tight_layout()
     plt.savefig(filepath+'_info.png')
     plt.close()
