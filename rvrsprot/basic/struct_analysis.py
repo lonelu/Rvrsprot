@@ -1,7 +1,6 @@
 import os
 import prody as pr
-import qbits
-from . import pdbutils
+from . import pdbutils, convex_hull
 
 def cal_phipsi(pdb_path):
     '''
@@ -49,7 +48,7 @@ def cal_ahull(_full_pdb, alpha=5):
     get the ahull of the pdb and calculate the ratio of ca that are in the ahull.
     '''
     prody_pdb = pr.parsePDB(_full_pdb)
-    ahull = qbits.convex_hull.AlphaHull(alpha)
+    ahull = convex_hull.AlphaHull(alpha)
     ahull.set_coords(prody_pdb)
     ahull.calc_hull()
     volume = ahull.get_volume()
