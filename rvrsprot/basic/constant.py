@@ -67,7 +67,7 @@ def read_apble(filepath):
         table = []
         key = ''
         for line in lines:
-            if line.split('\t')[0] in metalprot.constant.resnames_aa_20:
+            if line.split('\t')[0] in metalprot.basic.constant.resnames_aa_20:
                 key = line.split('\t')[0]
                 count = 0
                 continue
