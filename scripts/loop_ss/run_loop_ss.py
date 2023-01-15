@@ -5,7 +5,7 @@ import datetime
 
 
 '''
-python /mnt/e/GitHub_Design/Rvrsprot/scripts/loop_ss/run_loop_ss.py /mnt/e/GitHub_Design/Rvrsprot/scripts/loop_ss/loop_ss_paras.py
+python /mnt/e/GitHub_Design/Rvrsprot/scripts/loop_ss/run_loop_ss.py
 
 '''
 class Para():
@@ -44,7 +44,8 @@ class Para():
 
     ### Master search para
     loop_range = [12, 13]
-    loop_target_list = '/mnt/e/DesignData/Database/Qbits/pds_list_2p5.txt' # gpu:'/mnt/e/GitHub_Design/master_db/list'
+    #loop_target_list = '/mnt/e/DesignData/Database/Qbits/pds_list_2p5.txt' # 
+    loop_target_list = '/mnt/e/DesignData/Database/master_db/list'
     rmsdCut = 0.6
     master_query_loop_top = 500
     cluster_rmsd = 1.0
