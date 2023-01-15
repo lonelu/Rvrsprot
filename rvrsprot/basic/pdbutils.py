@@ -11,10 +11,9 @@ from scipy.spatial import Delaunay
 from scipy.spatial.distance import cdist
 from Bio.PDB import PDBParser, PDBIO, Select, Polypeptide
 import prody
-from qbits import convex_hull, pdb, clash
 from itertools import combinations
 
-from . import peputils
+from . import peputils, convex_hull
 
 parser = PDBParser(QUIET=True)
 io = PDBIO()

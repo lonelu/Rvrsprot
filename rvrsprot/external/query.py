@@ -2,7 +2,7 @@ import os
 import shlex
 import shutil
 import subprocess
-import qbits
+#import qbits
 
 createPDS = os.path.dirname(__file__) + '/createPDS'
 master = os.path.dirname(__file__) + '/master'

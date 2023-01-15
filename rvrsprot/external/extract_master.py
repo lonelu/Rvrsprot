@@ -1,5 +1,5 @@
 import numpy as np
-import qbits
+import metalprot
 
 def _get_seq_rmsd(seqfile):
     with open(seqfile, 'r') as f:
@@ -27,7 +27,7 @@ def _get_seq_rmsd(seqfile):
 def _get_loop_candidate_seqs_one_letter(seqs):
     seqs_one_letter = []
     for s in seqs:      
-        seqs_one_letter.append(''.join([qbits.constants.one_letter_code[res] for res in s]))
+        seqs_one_letter.append(''.join([metalprot.basic.constants.one_letter_code[res] for res in s]))
     return seqs_one_letter
 
 def _get_pdbs_master_info(matchfile, seqfile, loop_pdbs):

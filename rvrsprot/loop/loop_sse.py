@@ -17,7 +17,6 @@ from scipy.stats import mode
 from scipy.spatial.distance import cdist
 from itertools import product, permutations
 
-import qbits
 
 from rvrsprot.basic import pdbutils, cluster_loops, logger, peputils, constant, plot, struct_analysis
 from rvrsprot.external import query, extract_master

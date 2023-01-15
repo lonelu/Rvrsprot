@@ -1,13 +1,14 @@
 import os
 import sys
 from rvrsprot.loop import loop_ss
-import datetime 
+import datetime
 
 
 '''
 python /mnt/e/GitHub_Design/Rvrsprot/scripts/loop_ss/run_loop_ss.py
 
 '''
+
 class Para():
     workdir = '/mnt/e/DesignData/smallprot_loops/huong/'
     #outdir = 'loop_ss_20220401-164040/'
