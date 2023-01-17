@@ -1,0 +1,209 @@
+import numpy as np
+import prody as pr
+from sklearn.neighbors import NearestNeighbors
+import matplotlib.pyplot as plt
+import pandas as pd
+
+'''
+The script specially work for helix bundles.
+'''
+
+def combine_ags_into_one_chain(ags, title):
+    '''
+    Same in Metalprot.basic.combine_ags_into_one_chain.
+    '''
+    ag = pr.AtomGroup(title)
+    coords = []
+    chids = []
+    names = []
+    resnames = []
+    resnums = []
+    resnum = 1
+    for _ag_all in ags:
+        for cd in np.unique(_ag_all.getChids()):
+            #print(cd)
+            chid = 'A'
+
+            if cd == None:
+                _ag = _ag_all
+            else:
+                _ag = _ag_all.select('chid ' + cd)
+                
+            for i in np.unique(_ag.getResindices()):
+                c = _ag.select('resindex ' + str(i))
+                coords.extend(c.getCoords())
+                chids.extend([chid for x in range(len(c))])
+                names.extend(c.getNames())
+                resnames.extend(c.getResnames())
+                resnums.extend([resnum for x in range(len(c))])
+                resnum += 1
+
+    ag.setCoords(np.array(coords))
+    ag.setChids(chids)
+    ag.setNames(names)
+    ag.setResnames(resnames)
+    ag.setResnums(resnums)
+    return ag
+
+
+def generate_sel_from_input(target, loops, target_sels, loop_sels):
+    '''
+    Note the script assume the target goes first.
+    '''
+    structs = []
+    sels = []
+    for i in range(len(target_sels)):
+        structs.append(target)
+        sels.append(target_sels[i])
+
+        if len(loop_sels) > i:
+            structs.append(loops[i])
+            sels.append(loop_sels[i])
+
+    return structs, sels
+
+
+def cal_dist_info(target, loop):
+    '''
+    Generate dist map infomation target and loop.
+    '''
+    #test_dir = '/mnt/e/DesignData/Metalloprotein/SAHA_Vorinostat/run_design_cgs3/parametric_bundles/param_ala/'
+    #target = pr.parsePDB(test_dir + '00009.f63440efff7e.allbb_ala_min_ala_0001.pdb') 
+    #loop = pr.parsePDB(test_dir + 'loop_ss_20220721-224244/ABC_frt/_cent_/A-30-36-A-39-45_cent_rg_5_clu_121.pdb')
+
+    target_coords = target.select('bb and name N CA C').getCoords()
+    target_coords_r = target_coords.reshape(int(target_coords.shape[0]/3), 9)
+    loop_coords = loop.select('bb and name N CA C').getCoords()
+    loop_coords_r = loop_coords.reshape(int(loop_coords.shape[0]/3), 9)
+
+    neigh_y = NearestNeighbors(radius= 1.5) 
+    neigh_y.fit(target_coords_r)
+
+    x_in_y = neigh_y.radius_neighbors(loop_coords_r)
+
+    chidnames = target.select('bb and name CA').getChids()
+    resnums = target.select('bb and name CA').getResnums()
+    resnames = target.select('bb and name CA').getResnames()
+    target_ids = [(chidnames[id[0]], resnums[id[0]], resnames[id[0]]) if len(id) > 0 else ('', '', '') for id in x_in_y[1]]
+    
+    
+    loopchidnames = loop.select('bb and name CA').getChids()
+    loopresnums = loop.select('bb and name CA').getResnums()
+    loopresnames = loop.select('bb and name CA').getResnames()
+    loop_ids = [(loopchidnames[i], loopresnums[i], loopresnames[i]) for i in range(len(loopchidnames))]
+    
+    dists = [dist[0]  if len(dist) > 0 else -1 for dist in x_in_y[0]]
+    return target_ids, loop_ids, dists
+
+
+def plot_dist_info(target_ids, loop_ids, dists, filepath):
+    '''
+
+    '''
+    #fig, (ax) =plt.subplots(1, 1, figsize=(6, 2))
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    data = []
+    data.append(target_ids)
+    data.append(loop_ids)
+    data.append([round(f, 2) for f in dists])
+
+    ax.set_axis_off()
+    df=pd.DataFrame(data).T
+    ax.axis('tight')
+    ax.axis('off')
+    cols = ['target', 'loop', 'dist']
+    tab = ax.table(cellText=df.values, colLabels= cols, rowLabels=list(range(1, df.shape[0]+1)), cellLoc='center', loc='upper left')
+    
+    tab.set_fontsize(10)
+    #tab.scale(1, 2)
+    tab.auto_set_font_size(False)
+    ax.set_ylabel("Legend", fontsize = 12)
+
+    fig.tight_layout()
+    plt.tight_layout()
+    plt.savefig(filepath+'_info.png')
+    plt.close()
+    return
+
+
+def auto_pick_pos(target_ids, loop_ids, dists):
+    '''
+    
+    '''
+    front_min = back_min = 2.0
+    front_min_id = back_min_id = 0
+
+    for i in range(int(len(dists)/2)):
+        if dists[i] >= 0 and dists[i] < front_min:
+            front_min = dists[i]
+            front_min_id = i
+    for i in range(int(len(dists)/2), len(dists)):
+        if dists[i] >= 0 and dists[i] < back_min:
+            back_min = dists[i]
+            back_min_id = i
+
+    target_pos = (target_ids[front_min_id-1], target_ids[back_min_id+1])
+    loop_pos = (loop_ids[front_min_id], loop_ids[back_min_id])
+
+    return target_pos, loop_pos
+
+
+def auto_generate_sels(target, loops, outdir):
+    '''
+    Calculate the distance between N CA C, extract the position with min distance of N CA C. 
+    '''
+    structs = []
+    sels = []
+    target_sel = target.select('bb and name CA')[0]
+    sels.append((target_sel.getChid(), target_sel.getResnum(), target_sel.getResname()))
+    for loop in loops:
+        structs.append(target)
+        structs.append(loop)
+        target_ids, loop_ids, dists = cal_dist_info(target, loop)
+
+        plot_dist_info(target_ids, loop_ids, dists, outdir + loop.getTitle())
+
+        target_pos, loop_pos = auto_pick_pos(target_ids, loop_ids, dists)
+        sels.append(target_pos[0])
+        sels.append(loop_pos[0])
+        sels.append(loop_pos[1])
+        sels.append(target_pos[1])
+
+    structs.append(target)
+    target_sel = target.select('bb and name CA')[-1]
+    sels.append((target_sel.getChid(), target_sel.getResnum(), target_sel.getResname()))
+
+    sels_order = [(sels[i*2], sels[i*2+1]) for i in range(len(loops)*2+1)]
+    return structs, sels_order
+
+
+def generate_ags(structs, sels_order):
+    '''
+    
+    '''
+    ags = []
+    for i in range(0, len(structs)):
+        #TO DO: generate selection.
+        sel_str = 'protein and chid ' + sels_order[i][0][0] + ' and resnum ' + str(sels_order[i][0][1]) + 'to' + str(sels_order[i][1][1])
+        ag = structs[i].select(sel_str)
+        ags.append(ag)
+    return ags
+
+
+def connect_struct(outdir, title, targetpath, looppaths, target_sels= [], loop_sels = []):
+    '''
+    
+    '''
+    target = pr.parsePDB(targetpath)
+    loops = [pr.parsePDB(looppath) for looppath in looppaths]
+    if len(target_sels) > 0:
+        structs, sels = generate_sel_from_input(target, loops, target_sels, loop_sels)
+    else:
+        structs, sels = auto_generate_sels(target, loops)
+        
+    ags = generate_ags(structs, sels)
+
+    combined_ag = combine_ags_into_one_chain(ags, title)
+
+    pr.writePDB(outdir + title, combined_ag)
