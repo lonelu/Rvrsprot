@@ -67,9 +67,6 @@ def cal_dist_info(target, loop):
     '''
     Generate dist map infomation target and loop.
     '''
-    #test_dir = '/mnt/e/DesignData/Metalloprotein/SAHA_Vorinostat/run_design_cgs3/parametric_bundles/param_ala/'
-    #target = pr.parsePDB(test_dir + '00009.f63440efff7e.allbb_ala_min_ala_0001.pdb') 
-    #loop = pr.parsePDB(test_dir + 'loop_ss_20220721-224244/ABC_frt/_cent_/A-30-36-A-39-45_cent_rg_5_clu_121.pdb')
 
     target_coords = target.select('bb and name N CA C').getCoords()
     target_coords_r = target_coords.reshape(int(target_coords.shape[0]/3), 9)
@@ -149,14 +146,18 @@ def auto_pick_pos(target_ids, loop_ids, dists):
     return target_pos, loop_pos
 
 
-def auto_generate_sels(target, loops, outdir):
+def auto_generate_sels(target, loops, outdir, target_start, target_end):
     '''
     Calculate the distance between N CA C, extract the position with min distance of N CA C. 
     '''
     structs = []
     sels = []
-    target_sel = target.select('bb and name CA')[0]
-    sels.append((target_sel.getChid(), target_sel.getResnum(), target_sel.getResname()))
+    if target_start == '':
+        target_sel = target.select('bb and name CA')[0]
+        sels.append((target_sel.getChid(), target_sel.getResnum(), target_sel.getResname()))
+    else:
+        target_starts = target_start.split(',')
+        sels.append((target_starts[0], target_starts[1], target_starts[2]))
     for loop in loops:
         structs.append(target)
         structs.append(loop)
@@ -171,8 +172,12 @@ def auto_generate_sels(target, loops, outdir):
         sels.append(target_pos[1])
 
     structs.append(target)
-    target_sel = target.select('bb and name CA')[-1]
-    sels.append((target_sel.getChid(), target_sel.getResnum(), target_sel.getResname()))
+    if target_end == '':
+        target_sel = target.select('bb and name CA')[-1]
+        sels.append((target_sel.getChid(), target_sel.getResnum(), target_sel.getResname()))
+    else:
+        target_ends = target_end.split(',')
+        sels.append((target_ends[0], target_ends[1], target_ends[2]))
 
     sels_order = [(sels[i*2], sels[i*2+1]) for i in range(len(loops)*2+1)]
     return structs, sels_order
@@ -191,7 +196,7 @@ def generate_ags(structs, sels_order):
     return ags
 
 
-def connect_struct(outdir, title, targetpath, looppaths, target_sels= [], loop_sels = []):
+def connect_struct(outdir, title, targetpath, looppaths, target_start = '', target_end = '', target_sels= [], loop_sels = []):
     '''
     
     '''
@@ -200,10 +205,28 @@ def connect_struct(outdir, title, targetpath, looppaths, target_sels= [], loop_s
     if len(target_sels) > 0:
         structs, sels = generate_sel_from_input(target, loops, target_sels, loop_sels)
     else:
-        structs, sels = auto_generate_sels(target, loops)
+        structs, sels = auto_generate_sels(target, loops, outdir, target_start, target_end)
         
     ags = generate_ags(structs, sels)
 
     combined_ag = combine_ags_into_one_chain(ags, title)
 
     pr.writePDB(outdir + title, combined_ag)
+
+
+def test():
+    test_dir = '/mnt/e/DesignData/Metalloprotein/SAHA_Vorinostat/run_design_cgs3/parametric_bundles/param_ala/loop_connect/'
+    #target = pr.parsePDB(test_dir + '00009.f63440efff7e.allbb_ala_min_ala_0001.pdb') 
+    #loop = pr.parsePDB(test_dir + 'loop_ss_20220721-224244/ABC_frt/_cent_/A-30-36-A-39-45_cent_rg_5_clu_121.pdb')
+    targetpath = test_dir + '00009.f63440efff7e.allbb_ala_min_ala_0001.pdb'
+    looppaths = [
+        test_dir + 'A-104-110-A-113-119_cent_rg_5_clu_66.pdb'
+        test_dir + 'A-138-144-A-5-11_cent_rg_4_clu_14.pdb',
+        test_dir + 'A-30-36-A-39-45_cent_rg_5_clu_121.pdb',
+    ]
+
+    outdir = test_dir
+    title = 'combined'
+    target_start = 'A,75,ALA'
+    target_end = 'A,74,ALA'
+    connect_struct(outdir, title, targetpath, looppaths)
