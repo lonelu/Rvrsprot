@@ -220,13 +220,13 @@ def test():
     #loop = pr.parsePDB(test_dir + 'loop_ss_20220721-224244/ABC_frt/_cent_/A-30-36-A-39-45_cent_rg_5_clu_121.pdb')
     targetpath = test_dir + '00009.f63440efff7e.allbb_ala_min_ala_0001.pdb'
     looppaths = [
-        test_dir + 'A-104-110-A-113-119_cent_rg_5_clu_66.pdb'
+        test_dir + 'A-104-110-A-113-119_cent_rg_5_clu_66.pdb',
         test_dir + 'A-138-144-A-5-11_cent_rg_4_clu_14.pdb',
-        test_dir + 'A-30-36-A-39-45_cent_rg_5_clu_121.pdb',
+        test_dir + 'A-30-36-A-39-45_cent_rg_5_clu_121.pdb'
     ]
 
     outdir = test_dir
     title = 'combined'
     target_start = 'A,75,ALA'
     target_end = 'A,74,ALA'
-    connect_struct(outdir, title, targetpath, looppaths)
+    connect_struct(outdir, title, targetpath, looppaths, target_start, target_end)
