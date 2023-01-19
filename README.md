@@ -1,4 +1,4 @@
-# Smallprot for loop building
+# Rvrsprotfor loop building
 ## The program has been tested on Helix bundles.
 
 ### Example of usage 
