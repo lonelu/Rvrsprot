@@ -49,6 +49,7 @@ def combine_ags_into_one_chain(ags, title):
 def cal_dist_info(target, loop):
     '''
     Generate dist map infomation target and loop.
+    The current dist is not exactly real radius.
     '''
 
     target_coords = target.select('bb and name N CA C').getCoords()
@@ -107,29 +108,29 @@ def plot_dist_info(target_ids, loop_ids, dists, filepath):
     return
 
 
-def auto_pick_pos(target_ids, loop_ids, dists):
+def auto_pick_pos(target_ids, loop_ids, dists, front =7, back = 7):
     '''
     
     '''
     front_min = back_min = 2.0
     front_min_id = back_min_id = 0
 
-    for i in range(int(len(dists)/2)):
+    for i in range(front):
         if dists[i] >= 0 and dists[i] < front_min:
             front_min = dists[i]
             front_min_id = i
-    for i in range(int(len(dists)/2), len(dists)):
+    for i in range(len(dists)-back, len(dists)):
         if dists[i] >= 0 and dists[i] < back_min:
             back_min = dists[i]
             back_min_id = i
 
-    target_pos = (target_ids[front_min_id-1], target_ids[back_min_id+1])
-    loop_pos = (loop_ids[front_min_id], loop_ids[back_min_id])
+    target_pos = (target_ids[front_min_id], target_ids[back_min_id])
+    loop_pos = (loop_ids[front_min_id+1], loop_ids[back_min_id-1])
 
     return target_pos, loop_pos
 
 
-def auto_generate_sels(target, loops, outdir, target_start, target_end):
+def auto_generate_sels(target, loops, outdir, target_start, target_end, front=7, back=7):
     '''
     Calculate the distance between N CA C, extract the position with min distance of N CA C. 
     '''
@@ -148,7 +149,7 @@ def auto_generate_sels(target, loops, outdir, target_start, target_end):
 
         plot_dist_info(target_ids, loop_ids, dists, outdir + loop.getTitle())
 
-        target_pos, loop_pos = auto_pick_pos(target_ids, loop_ids, dists)
+        target_pos, loop_pos = auto_pick_pos(target_ids, loop_ids, dists, front, back)
         sels.append(target_pos[0])
         sels.append(loop_pos[0])
         sels.append(loop_pos[1])
@@ -195,6 +196,23 @@ def connect_struct(outdir, title, targetpath, looppaths, target_start = '', targ
     pr.writePDB(outdir + title, combined_ag)
 
 
+def get_user_sels(user_sel, NumberOfloops):
+    all_sels = user_sel.split(' ')
+    #print(all_sels)
+    sels = []
+    for i in range(2*NumberOfloops + 1):
+        sels.append(((all_sels[i].split(',')[1], all_sels[i].split(',')[2]), (all_sels[i].split(',')[3], all_sels[i].split(',')[4])))
+    return sels
+
+
+def print_auto_sels(structs, sels, NumberOfloops):
+    auto_sels = ''
+    for i in range(2*NumberOfloops + 1):
+        #print(structs[i].getTitle())
+        #print(sels[i])
+        auto_sels += structs[i].getTitle() + ',' + sels[i][0][0] + ',' + str(sels[i][0][1]) + ',' + sels[i][1][0] + ',' + str(sels[i][1][1]) + '\n'
+    print(auto_sels)
+
 def test():
     test_dir = '/mnt/e/DesignData/Metalloprotein/SAHA_Vorinostat/run_design_cgs3/parametric_bundles/param_ala/loop_connect/'
     #target = pr.parsePDB(test_dir + '00009.f63440efff7e.allbb_ala_min_ala_0001.pdb') 
@@ -211,3 +229,5 @@ def test():
     target_start = 'A,75,ALA'
     target_end = 'A,74,ALA'
     connect_struct(outdir, title, targetpath, looppaths, target_start, target_end)
+
+
