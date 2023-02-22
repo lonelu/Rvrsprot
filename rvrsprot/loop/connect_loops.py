@@ -46,23 +46,6 @@ def combine_ags_into_one_chain(ags, title):
     return ag
 
 
-def generate_sel_from_input(target, loops, target_sels, loop_sels):
-    '''
-    Note the script assume the target goes first.
-    '''
-    structs = []
-    sels = []
-    for i in range(len(target_sels)):
-        structs.append(target)
-        sels.append(target_sels[i])
-
-        if len(loop_sels) > i:
-            structs.append(loops[i])
-            sels.append(loop_sels[i])
-
-    return structs, sels
-
-
 def cal_dist_info(target, loop):
     '''
     Generate dist map infomation target and loop.
@@ -196,16 +179,14 @@ def generate_ags(structs, sels_order):
     return ags
 
 
-def connect_struct(outdir, title, targetpath, looppaths, target_start = '', target_end = '', target_sels= [], loop_sels = []):
+def connect_struct(outdir, title, targetpath, looppaths, target_start = '', target_end = ''):
     '''
     
     '''
     target = pr.parsePDB(targetpath)
     loops = [pr.parsePDB(looppath) for looppath in looppaths]
-    if len(target_sels) > 0:
-        structs, sels = generate_sel_from_input(target, loops, target_sels, loop_sels)
-    else:
-        structs, sels = auto_generate_sels(target, loops, outdir, target_start, target_end)
+
+    structs, sels = auto_generate_sels(target, loops, outdir, target_start, target_end)
         
     ags = generate_ags(structs, sels)
 
