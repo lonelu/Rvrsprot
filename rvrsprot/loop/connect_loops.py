@@ -3,6 +3,7 @@ import prody as pr
 from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
 import pandas as pd
+import re
 
 '''
 The script specially work for helix bundles.
@@ -197,7 +198,8 @@ def connect_struct(outdir, title, targetpath, looppaths, target_start = '', targ
 
 
 def get_user_sels(user_sel, NumberOfloops):
-    all_sels = user_sel.split(' ')
+    #all_sels = user_sel.strip()
+    all_sels = user_sel.replace(' ','').strip().split('\n')
     #print(all_sels)
     sels = []
     for i in range(2*NumberOfloops + 1):
@@ -212,6 +214,7 @@ def print_auto_sels(structs, sels, NumberOfloops):
         #print(sels[i])
         auto_sels += structs[i].getTitle() + ',' + sels[i][0][0] + ',' + str(sels[i][0][1]) + ',' + sels[i][1][0] + ',' + str(sels[i][1][1]) + '\n'
     print(auto_sels)
+    return auto_sels
 
 def test():
     test_dir = '/mnt/e/DesignData/Metalloprotein/SAHA_Vorinostat/run_design_cgs3/parametric_bundles/param_ala/loop_connect/'

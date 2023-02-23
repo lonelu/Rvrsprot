@@ -8,6 +8,7 @@ import gzip
 import shutil
 import numpy as np
 import prody as pr
+import tarfile
 
 from dataclasses import dataclass
 
@@ -138,7 +139,7 @@ def _get_top_cluster_summary(topo_dir, cluster_count_cut, loop_range, select_min
                 #Copy centroid pdb and plot   
                 if len(loop_pdbs) >= cluster_count_cut:
 
-                    _cent_dir = topo_dir + '_cent_' + topo_dir.split('/')[-1] + '/'
+                    _cent_dir = topo_dir[:-1] + '_cent_info/'
                     if not os.path.exists(_cent_dir):
                         os.mkdir(_cent_dir)
                     _cent_name = _lo_dir_name + '_cent_rg_' + str(l) + '_clu_' + str(len(loop_pdbs))
@@ -178,7 +179,7 @@ def run_loop_ss(outdir, target_file, loop_topo_sels, para):
         for chidchid in loop_sels.keys():
             loops = loop_sels[chidchid]
             for lo in loops:
-
+ 
                 #Create lo_dir
                 name = '-'.join([str(x) for x in lo])
                 lo_dir = topo_dir + name + '/'
@@ -190,7 +191,14 @@ def run_loop_ss(outdir, target_file, loop_topo_sels, para):
                 log = ''
                 cluster_loops.run_cluster(lo_dir + '/', log, lo_query_len,  para.cluster_rmsd , outfile= lo_dir + 'stdout')
 
+
         _get_top_cluster_summary(topo_dir, para.cluster_count_cut, para.loop_range, para.select_min_rmsd_pdb)
+
+        #zip the file and delete the unzipped pdbs.
+        tar = tarfile.open(outdir + topo + ".tar.gz", "w:gz")
+        tar.add(topo_dir, arcname=topo)
+        tar.close()
+        shutil.rmtree(topo_dir)
 
     return 
 
