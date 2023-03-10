@@ -4,7 +4,6 @@ import prody as pr
 from fpdf import FPDF
 import pandas as pd
 import numpy as np
-import metalprot
 from . import constant
 from ..external import extract_master
 import os
@@ -79,7 +78,7 @@ def _plot_phipsi(fig, ax, phi, psi, seqlen):
 
 def _plot_table(fig, ax, seq, phi, psi):
     data = []
-    data.append([metalprot.basic.constant.one_letter_code[s] for s in seq])
+    data.append([constant.one_letter_code[s] for s in seq])
     data.append([round(f, 1) if f else None for f in phi])
     data.append([round(f, 1) if f else None for f in psi])
     character = []

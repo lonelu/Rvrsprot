@@ -21,7 +21,7 @@ class Para():
     target_file = 'bb_prep_unloop.pdb'
     #The loop_files need to be ordered from N-terminal to C-terminal.
     loop_files = ['A-62-68-A-5-11_cent_rg_13_clu_90.pdb',
-                    'A-18-24-A-121-127_cent_rg_12_clu_25.pdb', 
+                    'A-18-24-A-127-133_cent_rg_4_clu_23.pdb', 
                     'A-138-142-A-78-84_cent_rg_12_clu_108.pdb']
 
     title ='combined'  #The output pdb name.
@@ -32,13 +32,13 @@ class Para():
     user_define_connection=True 
     #The user_sel must be split by line '\n' or ';' or '.'
     user_sel ='''
-    bb_prep_unloop,A,47,A,65
-    A-62-68-A-5-11_cent_rg_13_clu_90,A,65,A,86
-    bb_prep_unloop,A,11,A,21
-    A-18-24-A-121-127_cent_rg_12_clu_25,A,195,A,211
-    bb_prep_unloop,A,123,A,143
-    A-138-142-A-78-84_cent_rg_12_clu_108,A,472,A,483
-    bb_prep_unloop,A,79,A,101
+bb_prep_unloop,A,47,A,65
+A-62-68-A-5-11_cent_rg_13_clu_90,A,65,A,86
+bb_prep_unloop,A,11,A,23
+A-18-24-A-127-133_cent_rg_4_clu_23,D,560,D,569
+bb_prep_unloop,A,132,A,143
+A-138-142-A-78-84_cent_rg_12_clu_108,A,472,A,483
+bb_prep_unloop,A,79,A,101
     '''
 
 def main():

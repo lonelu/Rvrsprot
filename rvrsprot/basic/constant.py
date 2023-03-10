@@ -1,6 +1,4 @@
-import metalprot
 import numpy as np
-import os
 from pathlib import Path
 
 # hydrophobicity from https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/midas/hydrophob.html
@@ -59,6 +57,48 @@ propensity_dict = {'LYS': [0.615, 0, 0, 0, 0],
           'HSE': [0.802, 0, 0, 0, 0],
           }
 
+
+one_letter_code = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
+                   'ILE': 'I', 'PRO': 'P', 'THR': 'T', 'PHE': 'F', 'ASN': 'N',
+                   'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W',
+                   'ALA': 'A', 'VAL': 'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M',
+                   'MSE': 'm', 'ANY': '.', 'FE': 'fe', 'ZN': 'zn', 'HEM': 'h', 'SEP':'s', 'TPO':'t'}
+
+inv_one_letter_code = {
+    'C': 'CYS',
+    'D': 'ASP',
+    'S': 'SER',
+    'Q': 'GLN',
+    'K': 'LYS',
+    'I': 'ILE',
+    'P': 'PRO',
+    'T': 'THR',
+    'F': 'PHE',
+    'N': 'ASN',
+    'G': 'GLY',
+    'H': 'HIS',
+    'L': 'LEU',
+    'R': 'ARG',
+    'W': 'TRP',
+    'A': 'ALA',
+    'V': 'VAL',
+    'E': 'GLU',
+    'Y': 'TYR',
+    'M': 'MET',
+    'm': 'MSE',
+    '.': 'ANY',
+    'fe': 'FE',
+    'zn': 'ZN',
+    'h': 'HEM',
+    's': 'SEP',
+    't': 'TPO'}
+
+resnames_aa_20 = ['CYS', 'ASP', 'SER', 'GLN', 'LYS',
+                   'ILE', 'PRO', 'THR', 'PHE', 'ASN',
+                   'GLY', 'HIS', 'LEU', 'ARG', 'TRP',
+                   'ALA', 'VAL', 'GLU', 'TYR', 'MET',
+                   'MSE', 'CSO', 'TPO', 'SEP', 'TYS', 'HIP', 'NEP', 'PTR', 'SEC']
+
 def read_apble(filepath):
     apble_dict ={}
     with open(filepath) as file_in:
@@ -67,7 +107,7 @@ def read_apble(filepath):
         table = []
         key = ''
         for line in lines:
-            if line.split('\t')[0] in metalprot.basic.constant.resnames_aa_20:
+            if line.split('\t')[0] in resnames_aa_20:
                 key = line.split('\t')[0]
                 count = 0
                 continue

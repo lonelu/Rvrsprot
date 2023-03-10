@@ -1,5 +1,4 @@
 import os
-import sys
 from rvrsprot.loop import loop_ss
 import datetime
 
@@ -10,11 +9,11 @@ python /mnt/e/GitHub_Design/Rvrsprot/scripts/loop_ss/run_loop_ss.py
 '''
 
 class Para():
-    workdir = '/mnt/e/DesignData/bpp_fluo_comb/fluo/output1_09_f63440_nick_ala/sel/'
+    workdir = '/mnt/e/DesignData/bpp_fluo_comb/fluo/sel/'
     #outdir = 'loop_ss_20220401-164040/'
     outdir = None
     target_file = 'clean.pdb'
-
+ 
 
     # loop_topo_sels = {
     #     # Toplogy
@@ -44,7 +43,7 @@ class Para():
     }
 
     ### Master search para
-    loop_range = [3, 18]
+    loop_range = [10, 11]
     #loop_target_list = '/mnt/e/DesignData/Database/Qbits/pds_list_2p5.txt' # 
     loop_target_list = '/mnt/e/DesignData/Database/master_db/list'
     rmsdCut = 1.5
