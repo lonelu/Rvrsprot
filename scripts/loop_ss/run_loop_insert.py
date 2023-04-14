@@ -10,26 +10,24 @@ import re
 
 
 '''
-conda activate ...
+conda activate env_conda
 python /mnt/e/GitHub_Design/Rvrsprot/scripts/loop_ss/run_loop_insert.py
 '''
 
 class Para():
-    workdir = '/mnt/e/DesignData/bpp_fluo_comb/fluo/output1_09_f63440_nick_ala/sel/loop/'
+    workdir = '/mnt/e/DesignData/Chemodrugs/RUCs/loop/'
     outdir = None
 
-    target_file = 'bb_prep_unloop.pdb'
+    target_file = 'bb_prep_599_25new.pdb'
     #The loop_files need to be ordered from N-terminal to C-terminal.
-    loop_files = ['A-62-68-A-5-11_cent_rg_13_clu_90.pdb',
-                    'A-18-24-A-127-133_cent_rg_4_clu_23.pdb', 
-                    'A-138-142-A-78-84_cent_rg_12_clu_108.pdb']
+    loop_files = ['A-137-143-A-3-9_cent_rg_9_clu_24.pdb']
 
     title ='combined'  #The output pdb name.
-    NumberOfloops = 3
-    target_start ='A,47,GLY'
-    target_end='A,101,GLY'
+    NumberOfloops = 1
+    target_start ='A,128,GLY'
+    target_end='A,122,GLY'
 
-    user_define_connection=True 
+    user_define_connection=False 
     #The user_sel must be split by line '\n' or ';' or '.'
     user_sel ='''
 bb_prep_unloop,A,47,A,65

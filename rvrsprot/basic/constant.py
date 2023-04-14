@@ -1,5 +1,8 @@
 import numpy as np
+import os
 from pathlib import Path
+import pickle
+import prody as pr
 
 # hydrophobicity from https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/midas/hydrophob.html
 
@@ -126,4 +129,15 @@ def read_apble(filepath):
 
 APBEL_DICT = read_apble(Path(__file__).parent.parent / 'constants/APBLE.txt')
             
-                
+with open(Path(__file__).parent.parent / 'constants/abple_dict.pkl', 'rb') as infile:
+    abple_dict = pickle.load(infile)                
+
+ideal_ala = pr.parsePDB(os.path.join(Path(__file__).parent.parent, 'constants/ideal_ala.pdb'))
+
+try:
+    with open(Path(__file__).parent.parent / 'constants/ideal_alanine_bb_only.pkl', 'rb') as f:
+        ideal_alanine_bb_only = pickle.load(f)
+    ideal_ala_coords = np.array(ideal_alanine_bb_only[['c_x', 'c_y', 'c_z']])
+except:
+    ideal_alanine_bb_only = None
+    ideal_ala_coords = None
