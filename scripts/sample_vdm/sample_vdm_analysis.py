@@ -4,7 +4,7 @@
 import os
 import prody as pr
 
-workdir = '/mnt/e/DesignData/Chemodrugs/HB_RUC_1st_vdm/vdm_sampling_res131_ASP/'
+workdir = '/mnt/e/DesignData/Chemodrugs/HB_RUC_1st_vdm/vdm_sampling_res29_ASN/'
 
 outdir = workdir + 'duplicate_remove/'
 os.makedirs(outdir, exist_ok= True)
