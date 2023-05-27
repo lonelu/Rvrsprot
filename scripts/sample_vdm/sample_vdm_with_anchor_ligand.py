@@ -98,20 +98,114 @@ vdm_cg_aa_atommap_dict_indole = {
 }
 
 
+vdm_cg_aa_atommap_dict_ph ={
+    (0, 0):{
+        'cg' : 'ph',
+        'lgd_sel' : ['C5', 'C6', 'C12'],
+        'represent_name' : 'CZ',
+        'correspond_resname' : 'PHE',
+        'correspond_names' : ['CD1', 'CD2', 'CZ'],
+    },    
+    (0, 1):{
+        'cg' : 'ph',
+        'lgd_sel' : ['C5', 'C6', 'C12'],
+        'represent_name' : 'CZ',
+        'correspond_resname' : 'PHE',
+        'correspond_names' : ['CD2', 'CD1', 'CZ'],
+    },    
+    (0, 2):{
+        'cg' : 'ph',
+        'lgd_sel' : ['C5', 'C6', 'C12'],
+        'represent_name' : 'CZ',
+        'correspond_resname' : 'PHE',
+        'correspond_names' : ['CZ', 'CD1', 'CD2'],
+    },  
+    (0, 3):{
+        'cg' : 'ph',
+        'lgd_sel' : ['C5', 'C6', 'C12'],
+        'represent_name' : 'CZ',
+        'correspond_resname' : 'PHE',
+        'correspond_names' : ['CZ', 'CD2', 'CD1'],
+    },  
+    (0, 4):{
+        'cg' : 'ph',
+        'lgd_sel' : ['C5', 'C6', 'C12'],
+        'represent_name' : 'CZ',
+        'correspond_resname' : 'PHE',
+        'correspond_names' : ['CD1', 'CZ', 'CD2'],
+    },  
+    (0, 5):{
+        'cg' : 'ph',
+        'lgd_sel' : ['C5', 'C6', 'C12'],
+        'represent_name' : 'CZ',
+        'correspond_resname' : 'PHE',
+        'correspond_names' : ['CD2', 'CZ', 'CD1'],
+    },  
+
+    # (1, 0):{
+    #     'cg' : 'ph',
+    #     'lgd_sel' : ['C5', 'C6', 'C12'],
+    #     'represent_name' : 'CG',
+    #     'correspond_resname' : 'PHE',
+    #     'correspond_names' : ['CE1', 'CE2', 'CG'],
+    # },    
+    # (1, 1):{
+    #     'cg' : 'ph',
+    #     'lgd_sel' : ['C5', 'C6', 'C12'],
+    #     'represent_name' : 'CG',
+    #     'correspond_resname' : 'PHE',
+    #     'correspond_names' : ['CE2', 'CE1', 'CG'],
+    # },    
+    # (1, 2):{
+    #     'cg' : 'ph',
+    #     'lgd_sel' : ['C5', 'C6', 'C12'],
+    #     'represent_name' : 'CG',
+    #     'correspond_resname' : 'PHE',
+    #     'correspond_names' : ['CE1', 'CG', 'CE2'],
+    # },    
+    # (1, 3):{
+    #     'cg' : 'ph',
+    #     'lgd_sel' : ['C5', 'C6', 'C12'],
+    #     'represent_name' : 'CG',
+    #     'correspond_resname' : 'PHE',
+    #     'correspond_names' : ['CE2', 'CG', 'CE1'],
+    # },    
+
+    (6, 0):{
+        'cg' : 'phenol',
+        'lgd_sel' : ['C5', 'C6', 'C12'],
+        'represent_name' : 'CZ',
+        'correspond_resname' : 'PHE',
+        'correspond_names' : ['CD1', 'CD2', 'CZ'],
+    },    
+    (6, 1):{
+        'cg' : 'phenol',
+        'lgd_sel' : ['C5', 'C6', 'C12'],
+        'represent_name' : 'CZ',
+        'correspond_resname' : 'PHE',
+        'correspond_names' : ['CD2', 'CD1', 'CZ'],
+    },    
+
+}
+
 ########################################################################################
 
-workdir = '/mnt/e/DesignData/Chemodrugs/HB_RUC_0_vdm/'
-
-outdir = workdir + 'vdm_sampling_res131_ASP/'
-os.makedirs(outdir, exist_ok= True)
-
-target_name = 'bb_prep.pdb'
+workdir = '/mnt/e/DesignData/Chemodrugs/HB_RUC_1st_vdm/'
+target_name = 'bb_prep_599.pdb'
 target = pr.parsePDB(workdir + target_name)
+
+
+outdir = workdir + 'vdm_sampling_res90_LEU_PHE/'
+resnum = 90
+aa = 'LEU'
+vdm_cg_aa_atommap_dict = vdm_cg_aa_atommap_dict_ph
+
+outdir = workdir + 'vdm_sampling_res131_ASP2/'
 resnum = 131
 aa = 'ASP'
+vdm_cg_aa_atommap_dict = vdm_cg_aa_atommap_dict_bbcnh
 
-vdm_cg_aa_atommap_dict = vdm_cg_aa_atommap_dict_his
-
+os.makedirs(outdir, exist_ok= True)
 ########################################################################################
 
 def load_ligs(lig_path):
