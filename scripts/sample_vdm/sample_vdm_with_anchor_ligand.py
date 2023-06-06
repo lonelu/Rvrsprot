@@ -188,6 +188,7 @@ vdm_cg_aa_atommap_dict_ph ={
 
 }
 
+
 ########################################################################################
 
 workdir = '/mnt/e/DesignData/Chemodrugs/HB_RUC_1st_vdm/'
@@ -195,15 +196,15 @@ target_name = 'bb_prep_599.pdb'
 target = pr.parsePDB(workdir + target_name)
 
 
-outdir = workdir + 'vdm_sampling_res90_LEU_PHE/'
+outdir = workdir + 'vdm_sampling_res90_LEU_ph/'
 resnum = 90
 aa = 'LEU'
 vdm_cg_aa_atommap_dict = vdm_cg_aa_atommap_dict_ph
 
-outdir = workdir + 'vdm_sampling_res131_ASP2/'
+outdir = workdir + 'vdm_sampling_res131_ASP_hidhie2/'
 resnum = 131
 aa = 'ASP'
-vdm_cg_aa_atommap_dict = vdm_cg_aa_atommap_dict_bbcnh
+vdm_cg_aa_atommap_dict = vdm_cg_aa_atommap_dict_his
 
 os.makedirs(outdir, exist_ok= True)
 ########################################################################################
@@ -217,7 +218,7 @@ def load_ligs(lig_path):
         ligs.append(lig)
     return ligs
 
-ligands = load_ligs('/mnt/e/DesignData/Chemodrugs/HB_RUC__ligs/ligs_0_tf2middle/')
+ligands = load_ligs('/mnt/e/DesignData/Chemodrugs/HB_RUC__ligs/ligs_1st_tf2middle/')
 
 path_to_vdm_database='/mnt/e/DesignData/Combs/Combs2_database/vdMs/'
 
@@ -247,7 +248,7 @@ def run_vdm_sample(target, resnum, ligands, path_to_vdm_database, vdm_cg_aa_atom
         #pr.writePDB(outdir + ag.getTitle(), ag)
 
         #Search vdms.
-        search_cg_vdms.search_vdm(df_vdm, ligands, cg_id, vdm_cg_aa_atommap_dict, labels_cgs, df_cgs, dist_ind_cgs, rmsd = 0.75)
+        search_cg_vdms.search_vdm(df_vdm, ligands, cg_id, vdm_cg_aa_atommap_dict, labels_cgs, df_cgs, dist_ind_cgs, rmsd = 1.0)
         
 
     CgCombInfoDict = search_cg_vdms.construct_vdm_write(outdir, ligands, labels_cgs, vdm_cg_aa_atommap_dict, df_cgs, dist_ind_cgs, clash_radius = 2.3)
