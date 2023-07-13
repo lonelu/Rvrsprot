@@ -118,20 +118,23 @@ def df2ag(df, title = None, b_factor_column=None):
     return ag
 
 
-def write_vdm(path_to_database, cg, aa, outdir, total = None):
-    df_vdm = load_old_vdm(path_to_database, cg, aa)
+def write_vdm_cluster(df_vdm, cg, aa, outdir, cluster_num = 1):
+
+    df_vdm = df_vdm[(df_vdm['cluster_number'] == cluster_num)]
+
     df_vdm_rep = df_vdm[['CG', 'rota', 'probe_name']].drop_duplicates()
 
-    if total:
-        if total > df_vdm.shape[0]:
-            total = df_vdm.shape[0]
-    else:
-        total = df_vdm.shape[0]
 
-    for i in range(0, total):
-        i_cg =  df_vdm[(df_vdm['CG'] == df_vdm_rep.iloc[i]['CG']) 
-                        & (df_vdm['rota'] == df_vdm_rep.iloc[i]['rota']) 
-                        & (df_vdm['probe_name'] == df_vdm_rep.iloc[i]['probe_name'])]
-        agi = df2ag(i_cg)
-        pr.writePDB(outdir + cg + '_' + aa  + '_' + str(i) + '.pdb', agi)     
+
+    for i in range(0, df_vdm_rep.shape[0]):
+        x = df_vdm_rep.iloc[i]
+        _label = str(x['CG']) + '_' + str(x['rota']) + '_' + str(x['probe_name'])
+        i_cg =  df_vdm[(df_vdm['CG'] == x['CG']) 
+                        & (df_vdm['rota'] == x['rota']) 
+                        & (df_vdm['probe_name'] == x['probe_name'])]
+        try:
+            agi = df2ag(i_cg)
+            pr.writePDB(outdir + cg + '_' + aa  + '_' + _label + '.pdb', agi)     
+        except:
+            print('Error: ' + _label)
     return

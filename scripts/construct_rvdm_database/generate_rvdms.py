@@ -1,6 +1,6 @@
 import os
 import sys
-from rvrsprot.vdm_rev import reverse_vdm
+from rvrsprot.combs import reverse_vdm
 
 
 def vdm_db_key(path_to_database):

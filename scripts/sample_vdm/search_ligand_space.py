@@ -72,7 +72,7 @@ workdir = '/mnt/e/DesignData/Chemodrugs/HB_RUC__ligs/'
 outdir = workdir + 'ligs_1st_tf2middle/'
 os.makedirs(outdir, exist_ok= True)
 
-design_lig = pr.parsePDB(workdir + 'lig_1st_round.pdb')
+design_lig = pr.parsePDB(workdir + 'lig_2nd_round.pdb')
 middle_lig = pr.parsePDB(workdir + 'Maestro/9931954_24.pdb')
 tf = pr.calcTransformation(middle_lig.select('name  N1 C1 C2 C4 C5 C6 C10 C11 C12'), design_lig.select('name  N1 C1 C2 C4 C5 C6 C10 C11 C12'))
 
@@ -84,14 +84,14 @@ for lig in ligands:
 
 ########################################################################################
 #superimpost maestro ligs to designed lig on middle lig.
-workdir = '/mnt/e/DesignData/Chemodrugs/HB_RUC__ligs/'
+workdir = '/Users/lonelu/DesignData/Chemodrugs/HB_RUC__ligs/'
 
-outdir = workdir + 'ligs_0_tf2middle/'
+outdir = workdir + 'ligs_2nd_tf2middle/'
 os.makedirs(outdir, exist_ok= True)
 
-design_lig = pr.parsePDB(workdir + 'lig_0_round.pdb')
+design_lig = pr.parsePDB(workdir + 'lig_2nd_round.pdb')
 middle_lig = pr.parsePDB(workdir + 'Maestro/9931954_24.pdb')
-tf = pr.calcTransformation(middle_lig.select('name  N1 C1 C2 C4 C5 C6 C10 C11 C12'), design_lig.select('name  N1 C1 C2 C4 C5 C6 C10 C11 C12'))
+tf = pr.calcTransformation(middle_lig.select('name C4 C6 C10'), design_lig.select('name C4 C6 C10'))
 
 ligands = load_ligs(workdir + 'Maestro/')
 

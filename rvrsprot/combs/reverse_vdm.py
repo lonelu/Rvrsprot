@@ -4,7 +4,7 @@ We assume that reverse the vdMs on cg could be useful for function based design.
 The functions here are trying to prepare the rev vdms based on Combs2 database.
 '''
 
-from metalprot.combs import search_lig_indep, gvdm_helper
+from .combs import search_lig_indep, gvdm_helper
 from metalprot.basic import transformation
 from metalprot.basic import prody_ext
 import numpy as np

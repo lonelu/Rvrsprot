@@ -126,11 +126,10 @@ os.makedirs(outdir, exist_ok= True)
 run_vdm_sample(target, resnum, ligands, path_to_vdm_database, vdm_cg_aa_atommap_dict, outdir)
 '''
 
-resnums = [104, 142, 143]
-aas = ['ARG' for i in range(len(resnums))]
 
 resnums = [104, 104]
 aas = ['ARG', 'LYS']
+
        
 for i in range(len(resnums)):
     resnum = resnums[i]

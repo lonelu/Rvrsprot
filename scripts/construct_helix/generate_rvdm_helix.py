@@ -1,7 +1,7 @@
 # Generate hid ASP helix.
 
 import os
-from rvrsprot.vdm_rev import reverse_vdm
+from rvrsprot.combs import reverse_vdm
 
 path_to_database='/mnt/e/DesignData/ligands/LigandBB/_reverse_design/_rvrs_vdm/vdMs/'
 helix_path =  '/mnt/e/DesignData/ligands/LigandBB/_reverse_design/15mer_ALA.pdb'

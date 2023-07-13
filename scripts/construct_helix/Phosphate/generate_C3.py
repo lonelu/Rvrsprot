@@ -12,7 +12,7 @@ import numpy as np
 from metalprot.basic import utils, transformation, prody_ext
 from metalprot.combs import gvdm_helper, search_lig_indep, search_lig_indep_wrap, search_lig_indep_inpair
 
-from rvrsprot.vdm_rev import reverse_vdm
+from rvrsprot.combs import reverse_vdm
 
 sys.path.append(r'/mnt/e/GitHub_Design/Rvrsprot/scripts/construct_helix/construct_linear')
 from gss_rvdmH_basics import clash, clash_rvs, cal_angle, calc_z_direction, rot_rvdmH_C2

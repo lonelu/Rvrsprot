@@ -11,7 +11,7 @@ import numpy as np
 from metalprot.basic import utils, transformation
 from metalprot.combs import gvdm_helper, search_lig_indep, search_lig_indep_wrap, search_lig_indep_inpair
 
-from rvrsprot.vdm_rev import reverse_vdm
+from rvrsprot.combs import reverse_vdm
 
 '''
 python /mnt/e/GitHub_Design/Metalprot/scrips/position_ligand/belinostat/pose_lig_by_pair_vdm_dev.py

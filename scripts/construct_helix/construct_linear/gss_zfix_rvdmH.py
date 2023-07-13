@@ -23,7 +23,7 @@ from metalprot.basic import prody_ext
 import numpy as np
 import prody as pr
 import pandas as pd
-from rvrsprot.vdm_rev import reverse_vdm
+from rvrsprot.combs import reverse_vdm
 import sys
 sys.path.append(r'/mnt/e/GitHub_Design/Rvrsprot/scripts/construct_helix/construct_linear')
 from gss_rvdmH_basics import clash, clash_rvs, cal_angle, calc_z_direction, rot_rvdmH_C2

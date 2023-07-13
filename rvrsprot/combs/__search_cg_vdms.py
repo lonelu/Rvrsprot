@@ -186,9 +186,11 @@ def construct_vdm_write(outdir, ligands, labels_cgs, input_dict, df_cgs, dist_in
                 ind = inds[j]
                 rmsd = dists[j]/np.sqrt(num_cg_atoms)
                 if ind > labels.shape[0]:
+                    print('------Error happened-------')
                     print(cg)
                     print(labels.shape)
                     print(inds)
+                    continue
                 x = labels.iloc[ind]
                 v = dfa[(dfa['CG'] == x['CG']) & (dfa['rota'] == x['rota']) & (dfa['probe_name'] == x['probe_name'])]
                 if vdm_ligand_clash(v, ligands[i], clash_radius):
@@ -198,8 +200,9 @@ def construct_vdm_write(outdir, ligands, labels_cgs, input_dict, df_cgs, dist_in
                 info.append((round(rmsd, 2), round(v['C_score_bb_ind'].iloc[0], 2), v)) 
                 prefix = 'Lig-'+ str(i) + '_key_' + '-'.join(str(z) for z in cg) + '_rmsd_' + str(round(rmsd, 2))  + '_' + str(round(v['C_score_bb_ind'].iloc[0], 2)) + '_'                              
                 #combs2.design.functions.print_dataframe(v, outpath=outdir, tag = '_' + str(ind), prefix = prefix)
+                _label = str(x['CG']) + '_' + str(x['rota']) + '_' + str(x['probe_name'])
                 ag = gvdm_helper.df2ag(v)
-                pr.writePDB(outdir + prefix + '_' + str(ind),  ag)
+                pr.writePDB(outdir + prefix + '_' + _label,  ag)
             cgCombInfo.vdm_cgs[cg] = info
         CgCombInfoDict[i] = cgCombInfo
         
