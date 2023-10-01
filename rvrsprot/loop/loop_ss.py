@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from metalprot.basic import prody_ext
 
 from ..basic import cluster_loops, plot, struct_analysis
-from ..external import query, extract_master
+from ..master import query, extract_master
 
 
 @dataclass

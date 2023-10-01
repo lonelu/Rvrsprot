@@ -99,4 +99,20 @@ for lig in ligands:
     tf.apply(lig)
     pr.writePDB(outdir + lig.getTitle(), lig)
 
+#########################################################################################superimpost maestro ligs to designed lig on middle lig.
+workdir = '/Users/lonelu/DesignData/Chemodrugs/HB_RUC__ligs/'
+
+outdir = workdir + 'ligs_rucA_tf2middle/'
+os.makedirs(outdir, exist_ok= True)
+
+design_lig = pr.parsePDB(workdir + 'ruc_A_lig.pdb')
+middle_lig = pr.parsePDB(workdir + 'Maestro/9931954_24.pdb')
+tf = pr.calcTransformation(middle_lig.select('name C4 C6 C10'), design_lig.select('name C8 C21 C24'))
+
+ligands = load_ligs(workdir + 'Maestro/')
+
+for lig in ligands:
+    tf.apply(lig)
+    pr.writePDB(outdir + lig.getTitle(), lig)
+
 ########################################################################################

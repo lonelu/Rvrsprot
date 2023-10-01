@@ -10,7 +10,7 @@ import multiprocessing as mp
 from multiprocessing.dummy import Pool as ThreadPool
 
 '''
-python /mnt/e/GitHub_Design/Rvrsprot/scripts/construct_h2o_vdm/h2o_vdm_extract.py
+python /Users/lonelu/GitHub_Design/Rvrsprot/scripts/construct_h2o_vdm/h2o_vdm_extract.py
 '''
 
 def get_pairs(resnums, chids, distance=4):
@@ -56,11 +56,11 @@ def _extract_h2o_vdm(pdb):
                 print(pdb_name + ' | ' + sel_str )
                 failed_extraction.append(pdb_name + ' \t ' + sel_str + '\n')
                 continue
-            if not 'TYR' in resnames or not 'PRO' in resnames:
+            if not 'ASP' in resnames or not 'TRP' in resnames:
                 continue
             ext = pdb.select(sel_str)
 
-            coords = ext.select('resname TYR and name N CA C').getCoords()
+            coords = ext.select('resname ASP and name N CA C').getCoords()
             if len(coords) != 3:
                 continue
             tf = pr.calcTransformation(coords, constant.ideal_ala_coords)
@@ -84,9 +84,10 @@ def extract_h2o_vdm(pdb_name):
     return failed_extraction
 
 
-workdir = '/mnt/e/DesignData/Database/vdMh2o/'
+workdir = '/Users/lonelu/DesignData/Database/vdMh2o/'
 workdir_ext = workdir + 'parent_pdb_exts/'
-workdir_vdM = workdir + 'vdm_pdb_TYR-pro/'
+#workdir_vdM = workdir + 'vdm_pdb_TYR-pro/'
+workdir_vdM = workdir + 'vdm_pdb_ASP_indole/'
 os.makedirs(workdir_vdM, exist_ok=True)
 
 
@@ -122,7 +123,7 @@ for pdb_name in pdbs:
     results.append(result)
 
 
-with open(workdir + 'failed_extraction_TYR-ala.txt', 'w') as f:
+with open(workdir + 'failed_extraction_ASP-indole.txt', 'w') as f:
     for fes in results:
         for fe in fes:
             f.write(fe)

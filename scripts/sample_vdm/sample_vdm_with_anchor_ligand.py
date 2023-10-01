@@ -18,7 +18,7 @@ pd.set_option("display.max_columns", None)
 
 
 '''
-python /mnt/e/GitHub_Design/Rvrsprot/scripts/sample_vdm/sample_vdm_with_anchor_ligand.py
+python /Users/lonelu/GitHub_Design/Rvrsprot/scripts/sample_vdm/sample_vdm_with_anchor_ligand.py
 '''
 
 ########################################################################################
@@ -191,20 +191,26 @@ vdm_cg_aa_atommap_dict_ph ={
 
 ########################################################################################
 
-workdir = '/Users/lonelu/DesignData/Chemodrugs/HB_RUC_1st_vdm/'
-target_name = 'bb_prep_599.pdb'
+#workdir = '/Users/lonelu/DesignData/Chemodrugs/HB_RUC_1st_vdm/'
+#target_name = 'bb_prep_599.pdb'
+workdir = '/Users/lonelu/DesignData/Chemodrugs/RUC_vdm/HB_RUC_rucA_vdm/'
+target_name = 'ruc_A.pdb'
 target = pr.parsePDB(workdir + target_name)
 
+outdir = workdir + 'vdm_sampling_res29_ASP_hidhie2/'
+resnum = 29
+aa = 'ASP'
+vdm_cg_aa_atommap_dict = vdm_cg_aa_atommap_dict_bbcnh
 
 # outdir = workdir + 'vdm_sampling_res90_LEU_ph/'
 # resnum = 90
 # aa = 'LEU'
 # vdm_cg_aa_atommap_dict = vdm_cg_aa_atommap_dict_ph
 
-outdir = workdir + 'vdm_sampling_res131_ASP_hidhie2/'
-resnum = 131
-aa = 'ASP'
-vdm_cg_aa_atommap_dict = vdm_cg_aa_atommap_dict_his
+# outdir = workdir + 'vdm_sampling_res131_ASP_hidhie2/'
+# resnum = 131
+# aa = 'ASP'
+# vdm_cg_aa_atommap_dict = vdm_cg_aa_atommap_dict_his
 
 os.makedirs(outdir, exist_ok= True)
 ########################################################################################
@@ -218,8 +224,8 @@ def load_ligs(lig_path):
         ligs.append(lig)
     return ligs
 
-ligands = load_ligs('/Users/lonelu/DesignData/Chemodrugs/HB_RUC__ligs/ligs_1st_tf2middle/')
-
+#ligands = load_ligs('/Users/lonelu/DesignData/Chemodrugs/HB_RUC__ligs/ligs_1st_tf2middle/')
+ligands = load_ligs('/Users/lonelu/DesignData/Chemodrugs/HB_RUC__ligs/ligs_rucA_tf2middle/')
 path_to_vdm_database='/Users/lonelu/DesignData/Combs/vdMs/'
 
 ########################################################################################

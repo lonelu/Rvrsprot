@@ -52,3 +52,4 @@ def _get_pdbs_master_info(matchfile, seqfile, loop_pdbs):
         loop_pdss.append(all_pdss[idx])
     return loop_rmsds, loop_seqs, loop_pdss
     #return loop_pdbs[np.argmin(loop_rmsds)]
+

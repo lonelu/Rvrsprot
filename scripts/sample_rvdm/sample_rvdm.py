@@ -63,10 +63,13 @@ def run_rvdm_sample(outdir, ligand, vdm_cg_aa_atommap_dict, path_to_rvdm_databas
         __supper_cg_rvdms.rvdm_transform(ligand, lgd_sel_atomnames, cg_sel_atomnames, df_vdm)
 
         #Write top 10 rvdms.
-        labels_cgs = df_vdm[['CG', 'rota', 'probe_name']].drop_duplicates()
+        labels_cgs = df_vdm.sort_values(by='cluster_size', ascending=False)[['CG', 'rota', 'probe_name']].drop_duplicates()
+        #print(df_vdm['cluster_size'].value_counts())
+
         for i in range(10):
             x = labels_cgs.iloc[i]
             v = df_vdm[(df_vdm['CG'] == x['CG']) & (df_vdm['rota'] == x['rota']) & (df_vdm['probe_name'] == x['probe_name'])]
+            print(v['cluster_number'].iloc[0])
             ag = gvdm_helper.df2ag(v, 'test_rvdm_' + str(i))
             pr.writePDB(outdir + ag.getTitle(), ag)
     return

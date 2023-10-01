@@ -5,7 +5,7 @@ from fpdf import FPDF
 import pandas as pd
 import numpy as np
 from . import constant
-from ..external import extract_master
+from ..master import extract_master
 import os
 
 

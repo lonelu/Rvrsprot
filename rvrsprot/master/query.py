@@ -2,10 +2,11 @@ import os
 import shlex
 import shutil
 import subprocess
+from .. import config
 #import qbits
 
-createPDS = os.path.dirname(__file__) + '/createPDS'
-master = os.path.dirname(__file__) + '/master'
+createPDS = config.createPDS 
+master = config.master
 
 def create_target_pds(pdb_path, outdir, outfile = None):
     '''
@@ -88,7 +89,7 @@ def master_query_depre(pdb_path, targetList, rmsdCut=1., topN=None,
     os.chdir(cwd)
 
 
-def master_query(outdir, pdb_path, targetList, rmsdCut=1., topN=None, outfile=None):
+def master_query(outdir, pdb_path, targetList, rmsdCut=1., topN=None, struct_out = True, outfile=None):
     """Execute a MASTER query for a given PDB file.
 
     Parameters
@@ -108,23 +109,40 @@ def master_query(outdir, pdb_path, targetList, rmsdCut=1., topN=None, outfile=No
         If True, clobber MASTER output if it already exists.
     """
     pds_path = outdir + os.path.basename(pdb_path) + '.pds'
-
     cmd = createPDS + ' --type query --pdb {} --pds {} --cleanPDB'.format(pdb_path, pds_path)
     if outfile:
         with open(outfile, 'a') as f:
             subprocess.run(shlex.split(cmd), stdout=f)
     else:
         subprocess.run(shlex.split(cmd))
-    
-    #os.makedirs(outdir + os.path.basename(pdb_path), exist_ok=True)
+        
+    if struct_out:
+        _outdir = outdir + os.path.basename(pdb_path).split('.')[0]
+        os.makedirs(_outdir, exist_ok=True)
+
     if topN is not None:
-        cmd = (master + ' --query {} --targetList {} --topN {} --rmsdCut {} '
+        if struct_out:
+           cmd = (master + ' --query {} --targetList {} --topN {} --rmsdCut {} '
                '--seqOut {} --matchOut {} --structOut {}').format(pds_path, 
-                targetList, str(topN),str(rmsdCut), outdir + outdir + os.path.basename(pdb_path) + 'seq.txt', outdir + outdir + os.path.basename(pdb_path) + 'match.txt', outdir + os.path.basename(pdb_path))
+                targetList, str(topN),str(rmsdCut), outdir + os.path.basename(pdb_path) + 'seq.txt', 
+                outdir  + os.path.basename(pdb_path) + 'match.txt', _outdir)
+        else:
+            cmd = (master + ' --query {} --targetList {} --topN {} --rmsdCut {} '
+               '--seqOut {} --matchOut {}').format(pds_path, 
+                targetList, str(topN),str(rmsdCut), outdir + os.path.basename(pdb_path) + 'seq.txt', 
+                outdir  + os.path.basename(pdb_path) + 'match.txt')
     else:
-        cmd = (master + ' --query {} --targetList {} --rmsdCut {} '
-               '--seqOut {} --matchOut {} --structOut {}').format(pds_path, 
-                targetList, str(rmsdCut), outdir + os.path.basename(pdb_path) + 'seq.txt', outdir + os.path.basename(pdb_path) + 'match.txt', outdir + os.path.basename(pdb_path))
+        if struct_out:
+            cmd = (master + ' --query {} --targetList {} --rmsdCut {} '
+                '--seqOut {} --matchOut {} --structOut {}').format(pds_path, 
+                    targetList, str(rmsdCut), outdir + os.path.basename(pdb_path) + 'seq.txt', 
+                    outdir + os.path.basename(pdb_path) + 'match.txt', _outdir)
+        else:
+            cmd = (master + ' --query {} --targetList {} --rmsdCut {} '
+                '--seqOut {} --matchOut {}').format(pds_path, 
+                    targetList, str(rmsdCut), outdir + os.path.basename(pdb_path) + 'seq.txt', 
+                    outdir + os.path.basename(pdb_path) + 'match.txt')
+
     if outfile:
         with open(outfile, 'a') as f:
             subprocess.run(shlex.split(cmd), stdout=f)
